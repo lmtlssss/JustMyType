@@ -65,6 +65,10 @@ ChatGPT does not run Codex hooks automatically.
 
 ## proof
 
+[![Live Codex screen recording](demo/live-poster.png)](https://github.com/lmtlssss/JustMyType/releases/download/v0.1.0/JustMyType-live.mp4)
+
+[Watch the live demo](https://github.com/lmtlssss/JustMyType/releases/download/v0.1.0/JustMyType-live.mp4). 28 seconds, real Codex, synthetic data.
+
 15/16 held-out conflicts blocked. 16/16 valid actions passed. One miss.
 
 52 tests. Native installation verified on Linux, macOS and Windows.
