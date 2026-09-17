@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+import importlib.util
 import hashlib
 import json
 import math
@@ -20,12 +22,16 @@ from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-VERSION = "0.1.1"
+VERSION = "0.2.0"
 NAME = "justmytype"
 API_URL = "https://api.typesafe.ai/v1/systemone"
 POLICY_PATH = Path(__file__).with_name("policy.json")
 POLICY = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
 MODEL = POLICY["model"]
+ENGINE_SHA256 = hashlib.sha256(b"".join(Path(__file__).with_name(n).read_bytes() for n in ("jmt.py", "bindings.py", "policy.json"))).hexdigest()
+_bind_spec = importlib.util.spec_from_file_location("jmt_bindings", Path(__file__).with_name("bindings.py"))
+bindings = importlib.util.module_from_spec(_bind_spec)
+_bind_spec.loader.exec_module(bindings)
 MAX_INPUT = 262144
 MAX_STATE = 32768
 MAX_RESPONSE = 32768
@@ -114,7 +120,7 @@ def verdict(decision: str, reason: str | list[str], state: Any, *, probabilities
             usage: dict | None = None, latency: float = 0, basis: str = "local", model: str | None = None) -> dict:
     return {"decision": decision, "basis": basis, "reason_codes": [reason] if isinstance(reason, str) else reason,
             "probabilities": probabilities or {}, "model": model, "latency_ms": round(latency, 2),
-            "usage": usage or {}, "policy_sha256": digest(POLICY), "state_sha256": digest(redact(state))}
+            "usage": usage or {}, "policy_sha256": digest(POLICY), "state_sha256": digest(redact(state)), "engine_sha256": ENGINE_SHA256}
 
 
 def strings(value: Any, limit: int = 32) -> bool:
@@ -210,7 +216,7 @@ def validate_response(result: Any, questions: dict) -> dict:
     return result
 
 
-def request_api(state: dict, questions: dict, transport: Callable | None = None) -> dict:
+def request_api(state: dict, questions: dict, transport: Callable | None = None, deadline: float | None = None) -> dict:
     payload = {"state": state, "model": MODEL, "questions": questions}
     if transport is not None:
         return validate_response(transport(payload), questions)
@@ -219,8 +225,10 @@ def request_api(state: dict, questions: dict, transport: Callable | None = None)
         raise RuntimeError("missing_api_key")
     req = Request(API_URL, data=canonical(payload), headers={"Content-Type": "application/json", "Authorization": "Bearer " + key}, method="POST")
     opener = build_opener(NoRedirect())
-    deadline = time.monotonic() + 6
+    deadline = min(deadline if deadline is not None else float("inf"), time.monotonic() + 6)
     for attempt in range(2):
+        if time.monotonic() >= deadline:
+            raise TimeoutError("assessment_deadline")
         try:
             with opener.open(req, timeout=max(.1, min(4, deadline - time.monotonic()))) as response:
                 raw = response.read(MAX_RESPONSE + 1)
@@ -262,9 +270,43 @@ def evaluate(state: Any, config: dict | None = None, transport: Callable | None 
             return verdict("pass", "literal_read", clean)
         if not cfg["cloud_enabled"] and transport is None:
             return verdict("unassessed", "cloud_disabled", clean)
-        questions = POLICY["verification"] if mode == "verify" else POLICY["questions"]
-        response = request_api(clean, questions, transport)
-        if mode == "verify":
+        questions = dict(POLICY["verification"] if mode == "verify" else POLICY["questions"])
+        numeric_rules = [] if mode == "verify" else bindings.prepare(clean, POLICY["bindings"])
+        # Independent queries run concurrently, with isolated context. A binding
+        # request cannot contaminate the legacy whole-action assessment.
+        jobs = [("general", clean, questions)] + [
+            (gate["source"], bindings.request_state(gate, clean),
+             bindings.question_set(gate, POLICY["bindings"])) for gate in numeric_rules]
+        if numeric_rules:
+            authority_state, authority_questions = bindings.authority_request(numeric_rules, clean, POLICY["bindings"])
+            jobs.append(("rule_authority", authority_state, authority_questions))
+        deadline = time.monotonic() + 6
+        def query(job):
+            try:
+                return request_api(job[1], job[2], transport, deadline=deadline)
+            except (RuntimeError, ValueError, TypeError, KeyError, OSError, URLError, TimeoutError):
+                return None
+        if len(jobs) == 1:
+            responses = [query(jobs[0])]
+        else:
+            with ThreadPoolExecutor(max_workers=POLICY["bindings"]["parallel_requests"]) as pool:
+                responses = list(pool.map(query, jobs))
+        response = responses[0]
+        rule_results = []
+        total_usage = {k: sum(r["usage"][k] for r in responses if r is not None)
+                       for k in ("input_tokens", "output_tokens")}
+        errors = [jobs[i][0] for i, r in enumerate(responses) if r is None]
+        authority = responses[-1] if numeric_rules else None
+        for i, (gate, bound_response) in enumerate(zip(numeric_rules, responses[1:])):
+            if bound_response is not None:
+                record = bindings.compose([gate], bound_response["answers"], POLICY["bindings"])[0]
+                active = authority["answers"][f'a{i}'] if authority is not None else None
+                record["signals"]["authority"] = active
+                record["enforced"] = bool(record["enforced"] and active is not None
+                    and active["choice"] == "active" and active["probabilities"]["active"] >= POLICY["bindings"]["authority_min"])
+                rule_results.append(record)
+        decision, reasons, probs = "unassessed", ["provider_or_input_unavailable"], {}
+        if response is not None and mode == "verify":
             answer = response["answers"]["support"]
             probs = answer["probabilities"]
             choice = answer["choice"]
@@ -275,14 +317,25 @@ def evaluate(state: Any, config: dict | None = None, transport: Callable | None 
             else:
                 decision = "review"
             reasons = [choice]
-        else:
-            probs = {name: a["noul"] for name, a in response["answers"].items()}
+        elif response is not None:
+            probs = {name: response["answers"][name]["noul"] for name in POLICY["questions"]}
             high = max(probs.values())
             decision = "block" if high >= POLICY["thresholds"]["block"] else "review" if high >= POLICY["thresholds"]["review"] else "pass"
             reasons = [k for k, v in probs.items() if v >= POLICY["thresholds"]["review"]] or ["no_conflict_detected"]
-        return verdict(decision, reasons, clean, probabilities=probs,
-                       usage={k: response["usage"][k] for k in ("input_tokens", "output_tokens")},
-                       latency=(time.monotonic() - started) * 1000, basis="typesafe", model=response["model"])
+        if any(r["enforced"] for r in rule_results):
+            decision = "block"
+            reasons = ["numeric_rule_violation"] + [r for r in reasons if r != "no_conflict_detected"]
+        if errors and decision != "block":
+            decision = "unassessed"
+            reasons = ["partial_assessment_unavailable"]
+        output = verdict(decision, reasons, clean, probabilities=probs,
+                         usage=total_usage,
+                         latency=(time.monotonic() - started) * 1000, basis="typesafe" if any(r is not None for r in responses) else "local", model=MODEL if any(r is not None for r in responses) else None)
+        output["rule_checks"] = rule_results
+        output["api_requests"] = len(jobs)
+        output["assessment_complete"] = not errors
+        output["unavailable_checks"] = errors
+        return output
     except (RuntimeError, ValueError, TypeError, KeyError, OSError, URLError, TimeoutError):
         # No exception body or request headers can reach logs/stdout.
         return verdict("unassessed", "provider_or_input_unavailable", {}, latency=(time.monotonic() - started) * 1000)
@@ -435,6 +488,14 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess) -
             result = assessor(state, cfg, directory, "verify" if kind == "Stop" else "check")
         db.record(kind, name, result)
         text = "JustMyType: " + result["decision"] + " (" + ", ".join(result["reason_codes"]) + ")."
+        for check in result.get("rule_checks", []):
+            if check.get("enforced"):
+                comparison = check["comparison"]
+                detail = (" Exact comparison: " + ".".join(check["field"]) + " = " + comparison["left"]
+                          + " " + comparison["unit"] + "; restricted when " + comparison["operator"]
+                          + " " + comparison["right"] + ". Required approval or permitted scope was not established.")
+                text += detail[:360]
+                break
         if kind == "Stop":
             if cfg["mode"] == "guard" and result["decision"] == "block" and db.correction(sid, tid):
                 return {"decision": "block", "reason": text + " Correct the outcome claim using the actual evidence. Do not rerun work just to restate it."}
@@ -507,7 +568,7 @@ def main(argv: list[str] | None = None) -> int:
                    "data_dir": str(directory), "config_path": str(directory / "config.json"),
                    "cloud_enabled": cfg["cloud_enabled"], "mode": cfg["mode"],
                    "api_key_present": bool(os.environ.get("TYPESAFE_API_KEY")), "credential_runner_configured": bool(cfg["credential_runner"]),
-                   "model": MODEL, "policy_sha256": digest(POLICY), "runtime_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+                   "model": MODEL, "policy_sha256": digest(POLICY), "runtime_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "engine_sha256": ENGINE_SHA256}
             if args.live:
                 out["live"] = assess({"goal": "Inspect the demo service without changes.", "action": {"tool": "Bash", "arguments": {"command": "systemctl status demo.service --no-pager"}}, "constraints": [], "evidence": []}, cfg, directory)
             print(json.dumps(out))

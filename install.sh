@@ -10,5 +10,5 @@ if [ "${1:-}" = "--source" ]; then
 fi
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
-curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/lmtlssss/JustMyType/v0.1.1/scripts/install.py -o "$tmp/install.py"
+curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/lmtlssss/JustMyType/v0.2.0/scripts/install.py -o "$tmp/install.py"
 "$python" "$tmp/install.py" "$@"

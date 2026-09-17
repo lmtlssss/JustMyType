@@ -1,0 +1,354 @@
+{
+  "kind": "actual_live_browser_recording",
+  "video_sha256": "27ff676544b1294b04005e91e950b99fcd1daa1d0f2aad6fdaf512d313b0dea2",
+  "video": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "30/1",
+        "nb_frames": "1953"
+      }
+    ],
+    "format": {
+      "duration": "65.233333",
+      "size": "1658797"
+    }
+  },
+  "browser_viewport": {
+    "width": 1919,
+    "height": 1079,
+    "overflow": false
+  },
+  "events": [
+    {
+      "seconds": 0.0,
+      "event": "recording_started"
+    },
+    {
+      "seconds": 5.92,
+      "event": "instruction_entered"
+    },
+    {
+      "seconds": 7.194,
+      "event": "run_clicked"
+    },
+    {
+      "seconds": 7.217,
+      "event": "progress",
+      "processed": 0
+    },
+    {
+      "seconds": 9.275,
+      "event": "progress",
+      "processed": 1
+    },
+    {
+      "seconds": 9.795,
+      "event": "progress",
+      "processed": 2
+    },
+    {
+      "seconds": 10.321,
+      "event": "progress",
+      "processed": 3
+    },
+    {
+      "seconds": 11.107,
+      "event": "progress",
+      "processed": 4
+    },
+    {
+      "seconds": 11.879,
+      "event": "progress",
+      "processed": 5
+    },
+    {
+      "seconds": 12.397,
+      "event": "progress",
+      "processed": 6
+    },
+    {
+      "seconds": 12.916,
+      "event": "progress",
+      "processed": 7
+    },
+    {
+      "seconds": 13.704,
+      "event": "progress",
+      "processed": 8
+    },
+    {
+      "seconds": 14.231,
+      "event": "progress",
+      "processed": 9
+    },
+    {
+      "seconds": 14.749,
+      "event": "progress",
+      "processed": 10
+    },
+    {
+      "seconds": 15.541,
+      "event": "progress",
+      "processed": 11
+    },
+    {
+      "seconds": 16.058,
+      "event": "progress",
+      "processed": 12
+    },
+    {
+      "seconds": 16.623,
+      "event": "progress",
+      "processed": 13
+    },
+    {
+      "seconds": 17.416,
+      "event": "progress",
+      "processed": 14
+    },
+    {
+      "seconds": 17.944,
+      "event": "progress",
+      "processed": 15
+    },
+    {
+      "seconds": 18.467,
+      "event": "progress",
+      "processed": 16
+    },
+    {
+      "seconds": 19.257,
+      "event": "progress",
+      "processed": 17
+    },
+    {
+      "seconds": 19.783,
+      "event": "progress",
+      "processed": 18
+    },
+    {
+      "seconds": 20.325,
+      "event": "progress",
+      "processed": 19
+    },
+    {
+      "seconds": 20.885,
+      "event": "progress",
+      "processed": 20
+    },
+    {
+      "seconds": 21.687,
+      "event": "progress",
+      "processed": 21
+    },
+    {
+      "seconds": 22.248,
+      "event": "progress",
+      "processed": 22
+    },
+    {
+      "seconds": 22.826,
+      "event": "progress",
+      "processed": 23
+    },
+    {
+      "seconds": 23.695,
+      "event": "progress",
+      "processed": 24
+    },
+    {
+      "seconds": 24.248,
+      "event": "progress",
+      "processed": 25
+    },
+    {
+      "seconds": 24.852,
+      "event": "progress",
+      "processed": 26
+    },
+    {
+      "seconds": 25.643,
+      "event": "progress",
+      "processed": 27
+    },
+    {
+      "seconds": 26.185,
+      "event": "progress",
+      "processed": 28
+    },
+    {
+      "seconds": 26.741,
+      "event": "progress",
+      "processed": 29
+    },
+    {
+      "seconds": 27.624,
+      "event": "progress",
+      "processed": 30
+    },
+    {
+      "seconds": 28.427,
+      "event": "progress",
+      "processed": 31
+    },
+    {
+      "seconds": 29.744,
+      "event": "progress",
+      "processed": 32
+    },
+    {
+      "seconds": 30.55,
+      "event": "progress",
+      "processed": 33
+    },
+    {
+      "seconds": 32.149,
+      "event": "progress",
+      "processed": 34
+    },
+    {
+      "seconds": 33.21,
+      "event": "progress",
+      "processed": 35
+    },
+    {
+      "seconds": 35.364,
+      "event": "progress",
+      "processed": 36
+    },
+    {
+      "seconds": 36.758,
+      "event": "progress",
+      "processed": 37
+    },
+    {
+      "seconds": 38.356,
+      "event": "progress",
+      "processed": 38
+    },
+    {
+      "seconds": 39.425,
+      "event": "progress",
+      "processed": 39
+    },
+    {
+      "seconds": 41.026,
+      "event": "progress",
+      "processed": 40
+    },
+    {
+      "seconds": 41.554,
+      "event": "progress",
+      "processed": 41
+    },
+    {
+      "seconds": 42.361,
+      "event": "progress",
+      "processed": 42
+    },
+    {
+      "seconds": 43.263,
+      "event": "progress",
+      "processed": 43
+    },
+    {
+      "seconds": 44.122,
+      "event": "progress",
+      "processed": 44
+    },
+    {
+      "seconds": 45.197,
+      "event": "progress",
+      "processed": 45
+    },
+    {
+      "seconds": 46.007,
+      "event": "progress",
+      "processed": 46
+    },
+    {
+      "seconds": 47.542,
+      "event": "progress",
+      "processed": 47
+    },
+    {
+      "seconds": 49.218,
+      "event": "progress",
+      "processed": 48
+    },
+    {
+      "seconds": 49.218,
+      "event": "checks_complete",
+      "summary": {
+        "without_paid_cents": 243560,
+        "with_paid_cents": 74240,
+        "held_cents": 169320,
+        "held_count": 11,
+        "without_invalid_cents": 169320,
+        "with_invalid_cents": 0,
+        "prevented_cents": 169320,
+        "without_correct": 37,
+        "with_correct": 37,
+        "false_blocks": 0,
+        "valid_actions_preserved": 37,
+        "valid_actions_total": 37,
+        "block": 11,
+        "review": 12,
+        "pass": 25,
+        "unassessed": 0,
+        "held_conflicts": 11,
+        "median_guard_ms": 440.0,
+        "checking_seconds": 40.934
+      }
+    },
+    {
+      "seconds": 51.587,
+      "event": "held_request_opened",
+      "request_id": "R-4124"
+    },
+    {
+      "seconds": 54.983,
+      "event": "evidence_opened"
+    },
+    {
+      "seconds": 58.539,
+      "event": "valid_refund_opened",
+      "request_id": "R-4114"
+    },
+    {
+      "seconds": 64.87,
+      "event": "recording_finished"
+    }
+  ],
+  "page_errors": [],
+  "shared_proposals": true,
+  "synthetic": true,
+  "new_rule": "Hold every refund above $100 for review. Keep all other refund rules unchanged.",
+  "summary": {
+    "without_paid_cents": 243560,
+    "with_paid_cents": 74240,
+    "held_cents": 169320,
+    "held_count": 11,
+    "without_invalid_cents": 169320,
+    "with_invalid_cents": 0,
+    "prevented_cents": 169320,
+    "without_correct": 37,
+    "with_correct": 37,
+    "false_blocks": 0,
+    "valid_actions_preserved": 37,
+    "valid_actions_total": 37,
+    "block": 11,
+    "review": 12,
+    "pass": 25,
+    "unassessed": 0,
+    "held_conflicts": 11,
+    "median_guard_ms": 440.0,
+    "checking_seconds": 40.934
+  },
+  "editing": "none",
+  "audio": false
+}

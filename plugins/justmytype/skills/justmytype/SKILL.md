@@ -21,3 +21,11 @@ Do not put credentials in input files. Cloud mode sends bounded redacted snippet
 ChatGPT Machine calls do not automatically execute Codex hooks. For an explicit bridge,
 use the installed `justmytype check`, or `justmytype guard --goal TEXT -- COMMAND ARGS`.
 Both read the same private configuration; guard executes argv only after a pass.
+
+Numeric and date limits use source-bound field selection and exact comparisons.
+A `numeric_rule_violation` includes the field, original bound, and comparison in
+`rule_checks`. Fix the conflict or obtain the actual required approval. Do not
+change tools or encode arguments differently to bypass the same rule.
+The numeric path supports scalar JSON values and simple literal command flags;
+complex expressions use the existing general check. `engine_sha256` identifies
+the runtime, binding module, and policy together.

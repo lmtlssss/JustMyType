@@ -22,3 +22,9 @@ only after deciding that those records and settings are no longer needed.
 
 The public tests and demo use authored synthetic inputs. Private account data,
 user transcripts and desktop captures are not demo sources.
+
+Version 0.2.0 can send several isolated requests for one action. These requests
+reuse the same redacted user instructions and evidence with derived literal-field
+candidates. There is no new transcript access or credential source. More requests
+can mean more token usage. The result retains model signals and exact comparisons;
+those results can include the relevant source field and numeric bound.

@@ -40,3 +40,13 @@ possible. A user who can edit the plugin/config can bypass it.
 - https://docs.typesafe.ai/api
 - https://docs.typesafe.ai/confidence
 - https://docs.typesafe.ai/model-jaggedness/jev-1.13
+
+## numeric and date limits in 0.2.0
+
+The added path binds plain-language limits to scalar tool arguments, including
+simple literal shell flags. Jev selects meaning and rule authority; code compares
+values. It does not parse arbitrary Python, JavaScript, shell substitutions,
+array aggregates, or dynamic application state. Unsupported forms retain the
+existing general check. This is not a general-purpose type system or sandbox.
+
+See [implementation and boundaries](v0.2.0.md) and [measured results](../evals/v0.2.0/README.md).

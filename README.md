@@ -30,7 +30,7 @@ curl.exe -fsSL https://raw.githubusercontent.com/lmtlssss/JustMyType/main/instal
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-Upgrading from 0.1.0: run the removal command below, then install again.
+Upgrading from 0.1.x: run the removal command below, then install again.
 Private settings are retained.
 
 ## switch on
@@ -68,18 +68,19 @@ ChatGPT does not run Codex hooks automatically.
 
 ## proof
 
-[![Live release drill](demo/release-drill/poster.png)](demo/release-drill/JustMyType-Release-Drill.mp4)
+[![Refund desk, with actual action checks](demo/refund-desk/poster.png)](demo/refund-desk/JustMyType-Refund-Desk.mp4)
 
-[Watch the release drill](demo/release-drill/JustMyType-Release-Drill.mp4).
-54 seconds. Astra / medium. Three deliberate fault probes, then a tested repair.
-279 bad checkout responses without the plugin; zero with it. Synthetic data.
-[Method, prior failure and all results](demo/release-drill/README.md).
+[Watch the live refund desk](demo/refund-desk/JustMyType-Refund-Desk.mp4).
+Same Astra / medium plan. One new instruction before execution.
+0.2.0 holds all 11 affected synthetic payments, totalling $1,693.20;
+0.1.1 held none. All 37 valid actions proceed in both.
+[Method and limits](demo/refund-desk/README.md).
 
-56 tests. Native installation verified on Linux, macOS and Windows.
-[0.1.1 changes](docs/v0.1.1.md) / [platform proof](evals/v0.1.1-platform-proof.json).
+92 implementation tests. [0.2.0 changes](docs/v0.2.0.md).
+The separate 138-case evaluation shows a smaller gain: one extra conflict stopped,
+with six false blocks in both versions. Checks use more calls and tokens.
+[All results, costs and source hashes](evals/v0.2.0/README.md).
 
-The original 0.1.0 held-out test blocked 15/16 conflicts and passed 16/16 valid
-actions, with one miss. [Original results](evals/RESULTS.md) / [limits](docs/coverage.md).
 
 ## remove
 

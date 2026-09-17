@@ -1,0 +1,22 @@
+{
+  "model": "gpt-6-astra",
+  "effort": "medium",
+  "started_at": "2026-09-17T22:16:58.280371+00:00",
+  "elapsed_seconds": 95.98,
+  "usage": {
+    "input_tokens": 140520,
+    "cached_input_tokens": 98304,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 2582,
+    "reasoning_output_tokens": 0
+  },
+  "plan_sha256": "042854ecc22baebe37c57f45262037c1436bc3a92fd1d5766a8a54b9c2c803a7",
+  "fixture_sha256": "4c7f99f02c87ccaf9be35331e4321098f737d0ec89db447d6dbd65a8b7d741ef",
+  "policy_sha256": "b63de251c68ae411ceb8e82e172fc20793ccb047a317bf78245765561b914bd5",
+  "prompt_sha256": "e0eaf152b2e6785fd40fff99ae1c00e5693914e0f537a15e60cddc56074c18ed",
+  "requests": 48,
+  "synthetic": true,
+  "extra_rule_in_planning": false,
+  "generation_attempt": 1,
+  "source": "Actual Codex structured output"
+}

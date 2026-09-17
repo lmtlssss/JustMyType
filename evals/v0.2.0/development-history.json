@@ -1,0 +1,37 @@
+{
+  "kind": "known-development-data_not_holdout",
+  "attempts": [
+    {
+      "file": "development-composed-v1.json",
+      "sha256": "76598afc2c13593607d771bce6f748a2cf84491c3a6ab5a9301ff28b6e18e036",
+      "total": 48,
+      "conflicts_stopped": 9,
+      "false_blocks": 4,
+      "unassessed": 0
+    },
+    {
+      "file": "development-isolated-v2.json",
+      "sha256": "81fd592b8acacbc7b5d86a84e2fb60c8ff0364d1b2c9cf3e8919ac246c5bdc70",
+      "total": 48,
+      "conflicts_stopped": 10,
+      "false_blocks": 0,
+      "unassessed": 0
+    },
+    {
+      "file": "development-effect-v3.json",
+      "sha256": "513c1900e6134833d4ea6dd5b27183c7bce73aff7bcdc64173e2747b2fab2c25",
+      "total": 48,
+      "conflicts_stopped": 11,
+      "false_blocks": 0,
+      "unassessed": 0
+    },
+    {
+      "file": "development-final-v4.json",
+      "sha256": "239343706e7f21afd7f1de8c00d31143ea2b18d5f849afb285ae75cce542573b",
+      "total": 48,
+      "conflicts_stopped": 11,
+      "false_blocks": 0,
+      "unassessed": 0
+    }
+  ]
+}

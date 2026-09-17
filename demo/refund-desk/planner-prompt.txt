@@ -1,0 +1,1 @@
+Resolve all refund requests in fixture.json according to policy.txt. Use fields.txt to interpret the records. Return exactly one proposed decision per request, with integer cents and a short reason. Review only cases that the policy requires. No payments are made by this planning step. You may use tools to calculate and check your work.
