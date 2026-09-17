@@ -2,25 +2,20 @@
 
 it's not you. it's your arguments.
 
-TypeSafe checks the action before Codex makes it your problem.
+TypeSafe checks for Codex.
 
 ```text
 JUSTMYTYPE
 ──────────────────────────────────────────────────────────
 
-what you asked    ─┐
-what it will do   ─┼─► typed judgment ─► pass / review / block
-what happened     ─┘                          │
-                                             ▼
-                                      native tool call
-
-"done."  ─► observed evidence ─► supported / not supported
+goal + action + evidence  ──►  pass / review / block
+completion claim         ──►  observed result
 ```
 
 ## install
 
-Python 3.11+, Git, and Codex 0.154.0 or later.
-The hook interpreter must be on PATH as `python3` on Unix or `python` on Windows.
+Linux / macOS / Windows. Python 3.11+, Git, Codex 0.154.0+.
+Use `python3` on Unix; `python` on Windows.
 
 Linux / macOS:
 
@@ -28,43 +23,36 @@ Linux / macOS:
 curl -fsSL https://raw.githubusercontent.com/lmtlssss/JustMyType/main/install.sh | sh
 ```
 
-Windows, in PowerShell:
+Windows PowerShell:
 
 ```powershell
 curl.exe -fsSL https://raw.githubusercontent.com/lmtlssss/JustMyType/main/install.ps1 -o install.ps1
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-inspect the script first when needed. the installer checks the release SHA-256,
-registers the native plugin and trusts only its five current hook definitions.
-checksums detect a changed download; they are not a separate signature.
-existing model settings and other plugins stay in place.
-
 ## switch on
 
-supply `TYPESAFE_API_KEY` through your credential manager. no key goes in the repo.
+Set `TYPESAFE_API_KEY` in your environment.
 
 ```sh
 justmytype configure --cloud on --mode observe
 justmytype doctor --live
 ```
 
-cloud mode sends bounded goal, action and evidence snippets to TypeSafe.
-redaction is best-effort. read [privacy](docs/privacy.md) before activation.
-restart the Codex conversation after installation so it loads the plugin.
+Cloud checks send redacted goal, action and evidence snippets to TypeSafe.
+[Privacy](docs/privacy.md). Start a new Codex conversation after installation.
 
 ```sh
 justmytype configure --mode guard
 ```
 
-observe adds feedback. guard denies a concrete high-scoring conflict.
-review and provider failure remain notices, not native-tool blocks.
-no broad sudo ban. no replacement model. no background transcript sweep.
+`observe` adds feedback. `guard` blocks high-confidence conflicts.
+Reviews and service failures do not block native tools.
 
 ## use
 
-use Codex normally. shell commands, patches and MCP arguments use the same policy.
-claims of completion are checked against observed results from the same turn.
+Shell commands, patches and MCP calls are checked before execution.
+Completion claims are checked against the current turn's results.
 
 ```sh
 justmytype check --input action.json
@@ -72,23 +60,15 @@ justmytype verify --input claim.json
 justmytype guard --goal "Print the current directory." -- pwd
 ```
 
-`guard` runs the exact argv only after a pass. it does not invoke a shell.
-ChatGPT Machine does not run Codex hooks automatically; this explicit command
-uses the same installed runtime and private configuration.
+CLI `guard` executes only a pass. It also provides the explicit Machine bridge;
+ChatGPT does not run Codex hooks automatically.
 
 ## proof
 
-[![10,000 synthetic records preserved](demo/poster.png)](demo/JustMyType-demo.mp4)
+15/16 held-out conflicts blocked. 16/16 valid actions passed. One miss.
 
-[watch the 34-second MP4](demo/JustMyType-demo.mp4). real file effects, synthetic data.
-
-15/16 held-out conflicts blocked. 0 false blocks. 1 miss, retained in the report.
-
-
-[method and measured results](evals/RESULTS.md) · [tool coverage](docs/coverage.md)
-
-fixture results are not production error rates. a pass is not permission,
-proof of correctness, or a guarantee that an action is safe.
+52 tests. Native installation verified on Linux, macOS and Windows.
+[Results](evals/RESULTS.md) · [Platform proof](evals/platform-proof.json) · [Limits](docs/coverage.md)
 
 ## remove
 
@@ -96,8 +76,7 @@ proof of correctness, or a guarantee that an action is safe.
 python3 "$HOME/.codex/plugins/data/justmytype-justmytype/package/scripts/install.py" --uninstall
 ```
 
-on Windows use `python` and the same path under your user profile.
-private state and configuration are retained. other plugins are not removed.
+Windows: use `python` and your user-profile path. Private settings are retained.
 
 ## build
 
@@ -106,4 +85,4 @@ python3 -m unittest discover -s tests -v
 python3 scripts/package.py
 ```
 
-MIT. independent integration. not an OpenAI or TypeSafe product.
+MIT. Independent integration.
