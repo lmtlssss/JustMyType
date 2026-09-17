@@ -1,0 +1,20 @@
+{
+  "name": "justmytype",
+  "interface": {
+    "displayName": "JustMyType"
+  },
+  "plugins": [
+    {
+      "name": "justmytype",
+      "source": {
+        "source": "local",
+        "path": "./plugins/justmytype"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "timeout": 12
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "timeout": 12
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "timeout": 12
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "timeout": 12
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
+            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "timeout": 12
+          }
+        ]
+      }
+    ]
+  }
+}

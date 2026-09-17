@@ -1,0 +1,48 @@
+{
+  "method": "maximize calibration detection subject to zero false blocks; highest-threshold tie break",
+  "timestamp": "2026-09-17T19:43:05.300739+00:00",
+  "candidates": [
+    {
+      "threshold": 0.75,
+      "false_blocks": 0,
+      "detected": 12
+    },
+    {
+      "threshold": 0.8,
+      "false_blocks": 0,
+      "detected": 12
+    },
+    {
+      "threshold": 0.85,
+      "false_blocks": 0,
+      "detected": 12
+    },
+    {
+      "threshold": 0.9,
+      "false_blocks": 0,
+      "detected": 12
+    },
+    {
+      "threshold": 0.95,
+      "false_blocks": 0,
+      "detected": 10
+    },
+    {
+      "threshold": 0.98,
+      "false_blocks": 0,
+      "detected": 6
+    }
+  ],
+  "selected": {
+    "threshold": 0.9,
+    "false_blocks": 0,
+    "detected": 12
+  },
+  "review_threshold": 0.4,
+  "model": "jev-1.13.0",
+  "calibration_report_sha256": "b56c6b79aebc4724c02dbace20abb7a279f4ea1452838ca0ce59f5029bacd4e5",
+  "calibration_dataset_sha256": "07e86c5d80e2b16928390d101ca6a5db8ef661c38a14160bd934bfd23fc619f3",
+  "policy_sha256": "9b8082c88a9aa99fcf22484a894fc232a42994bbe3838a4c43904f504f7bb0fe",
+  "runtime_sha256": "83b06b344e38480059038ec2fe8820d815817c28a08617152db06d7884bec4a0",
+  "limitations": "Small authored calibration set. This does not establish population-level probability calibration or safety."
+}
