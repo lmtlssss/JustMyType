@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout · Forma</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #111411; color: #eef1e9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 20% 35%, #242e22 0, transparent 55%); }
+    header, main, footer { width: min(1080px, calc(100% - 48px)); margin: auto; }
+    header { padding: 32px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #353b33; }
+    .brand { font-size: 23px; font-weight: 750; letter-spacing: -.8px; }
+    .brand span { color: #c3ed91; }
+    .muted, footer { color: #a5afa0; }
+    .tag { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #c3ed91; }
+    main { padding: 62px 0 72px; }
+    h1 { font-size: clamp(36px, 5vw, 56px); letter-spacing: -2px; margin: 12px 0; font-weight: 550; }
+    .intro { margin: 0 0 38px; color: #a5afa0; line-height: 1.6; }
+    .layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 28px; align-items: start; }
+    .product { border: 1px solid #3b4437; border-radius: 20px; overflow: hidden; background: #1b211a; }
+    .art { height: 245px; display: grid; place-items: center; background: radial-gradient(ellipse at center, #47523b, #252e22 65%); position: relative; overflow: hidden; }
+    .art::before { content: ''; position: absolute; width: 250px; height: 250px; border: 1px solid #75826640; border-radius: 50%; }
+    .object { width: 160px; height: 110px; border-radius: 16px; background: linear-gradient(145deg, #ced6be, #8f9c80); box-shadow: 22px 30px 30px #0006, inset 0 2px 1px #f4ffdf; transform: rotate(-15deg); display: grid; place-items: center; color: #37432c; font-weight: 750; letter-spacing: 6px; }
+    .art-label { position: absolute; left: 22px; bottom: 18px; font-size: 11px; letter-spacing: 2px; color: #bdc7b4; }
+    .details { padding: 26px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    h2 { font-size: 20px; font-weight: 550; margin: 0 0 8px; }
+    p { line-height: 1.5; }
+    .details p { margin: 0; font-size: 14px; }
+    .quantity-row { border-top: 1px solid #3b4437; padding-top: 24px; margin-top: 26px; }
+    .stepper { display: flex; border: 1px solid #59634f; border-radius: 10px; overflow: hidden; }
+    button, input { font: inherit; }
+    .stepper button { background: #293025; color: #eef1e9; border: 0; width: 40px; min-height: 44px; cursor: pointer; font-size: 21px; }
+    .stepper input { width: 62px; border: 0; background: #141a12; text-align: center; color: #eef1e9; appearance: textfield; }
+    input::-webkit-inner-spin-button { appearance: none; }
+    button:hover { filter: brightness(1.15); }
+    button:disabled { opacity: .4; cursor: default; }
+    :focus-visible { outline: 2px solid #c3ed91; outline-offset: -3px; }
+    .summary { background: #20261e; border: 1px solid #414a3b; border-radius: 20px; padding: 28px; }
+    .summary h2 { margin-bottom: 26px; }
+    .discount { display: flex; align-items: center; gap: 12px; background: #2c3924; border: 1px solid #546847; padding: 16px; border-radius: 12px; cursor: pointer; }
+    .discount input { accent-color: #c3ed91; width: 20px; height: 20px; flex-shrink: 0; }
+    .discount strong { display: block; font-size: 14px; color: #d1edb3; }
+    .discount small { color: #adbd9e; }
+    dl { margin: 28px 0 0; }
+    dl .row { margin: 18px 0; font-size: 14px; }
+    dt { color: #b4beac; } dd { margin: 0; font-variant-numeric: tabular-nums; }
+    .savings dd { color: #c3ed91; }
+    .total { border-top: 1px solid #46513f; padding-top: 24px; margin-top: 24px !important; }
+    .total dt { color: #eef1e9; font-size: 18px; }
+    .total dd { font-size: 36px; letter-spacing: -1px; }
+    .note { color: #a5afa0; font-size: 12px; margin: 22px 0 0; line-height: 1.7; }
+    .error { color: #ffbaaa; font-size: 13px; min-height: 20px; margin-top: 12px !important; }
+    footer { border-top: 1px solid #353b33; padding: 24px 0; display: flex; justify-content: space-between; gap: 20px; font-size: 12px; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } main { padding: 36px 0; } header, main, footer { width: calc(100% - 32px); } .art { height: 200px; } footer { flex-wrap: wrap; } }
+  </style>
+</head>
+<body>
+  <header><div class="brand">forma<span>®</span></div><span class="muted">Checkout / 02</span></header>
+  <main>
+    <div class="tag">Good design. Everyday.</div>
+    <h1>Make it yours.</h1>
+    <p class="intro">One essential. A little less. Review your order below.</p>
+    <div class="layout">
+      <section class="product" aria-labelledby="product-name">
+        <div class="art" role="img" aria-label="Sage green Forma Everyday Kit"><div class="object">FORMA</div><span class="art-label">THE EVERYDAY COLLECTION</span></div>
+        <div class="details">
+          <div class="row"><h2 id="product-name">Everyday Kit</h2><strong>$100.00</strong></div>
+          <p class="muted">Sage edition · $100.00 per item</p>
+          <div class="row quantity-row"><label for="quantity">Quantity</label><div class="stepper"><button id="minus" type="button" aria-label="Decrease quantity">−</button><input id="quantity" type="number" min="1" max="9999" step="1" value="1" inputmode="numeric" aria-describedby="quantity-error"><button id="plus" type="button" aria-label="Increase quantity">+</button></div></div>
+          <p id="quantity-error" class="error" role="alert"></p>
+        </div>
+      </section>
+      <section class="summary" aria-labelledby="summary-title">
+        <h2 id="summary-title">Order summary</h2>
+        <label class="discount"><input id="discount" type="checkbox" checked><span><strong>Take 25% off</strong><small>A little something, on us.</small></span></label>
+        <div aria-live="polite" aria-atomic="true">
+          <dl>
+            <div class="row"><dt>Subtotal <span id="count">(1 item)</span></dt><dd id="subtotal">$100.00</dd></div>
+            <div class="row savings"><dt id="discount-label">Discount (25%)</dt><dd id="savings">−$25.00</dd></div>
+            <div class="row total"><dt>Total <small class="muted">USD</small></dt><dd><output id="total" for="quantity discount">$75.00</output></dd></div>
+          </dl>
+        </div>
+        <p class="note">Item total only. Taxes and shipping are not calculated.<br>This local checkout preview does not place an order or collect payment.</p>
+      </section>
+    </div>
+    <noscript><p>Enable JavaScript to update quantity and discount totals.</p></noscript>
+  </main>
+  <footer><span>Thoughtfully simple. Unmistakably Forma.</span><span>Checkout v2.0 · USD</span></footer>
+  <script>
+    const quantity = document.getElementById('quantity');
+    const discount = document.getElementById('discount');
+    const minus = document.getElementById('minus');
+    const plus = document.getElementById('plus');
+    const money = cents => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+    function render() {
+      const count = quantity.valueAsNumber;
+      const valid = Number.isInteger(count) && count >= 1 && count <= 9999;
+      quantity.setAttribute('aria-invalid', String(!valid));
+      document.getElementById('quantity-error').textContent = valid ? '' : 'Enter a whole quantity from 1 to 9,999.';
+      minus.disabled = !valid || count <= 1;
+      plus.disabled = !valid || count >= 9999;
+      const percent = discount.checked ? 25 : 0;
+      const subtotal = count * 10000;
+      const total = Math.floor((subtotal * (100 - percent) + 50) / 100);
+      document.getElementById('count').textContent = valid ? `(${count} ${count === 1 ? 'item' : 'items'})` : '';
+      document.getElementById('discount-label').textContent = `Discount (${percent}%)`;
+      document.getElementById('subtotal').textContent = valid ? money(subtotal) : '—';
+      document.getElementById('savings').textContent = valid ? `−${money(subtotal - total)}` : '—';
+      document.getElementById('total').textContent = valid ? money(total) : '—';
+    }
+    quantity.addEventListener('input', render);
+    discount.addEventListener('change', render);
+    minus.addEventListener('click', () => { quantity.stepDown(); render(); });
+    plus.addEventListener('click', () => { quantity.stepUp(); render(); });
+    render();
+  </script>
+</body>
+</html>

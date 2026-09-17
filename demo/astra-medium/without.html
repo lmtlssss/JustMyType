@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout — Form & Field</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #f1f0ea; background: #111411; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 10% 35%, #26302255, transparent 55%); }
+    header, main, footer { width: min(1060px, calc(100% - 48px)); margin: auto; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 32px 0; border-bottom: 1px solid #ffffff15; }
+    .brand { font-family: Georgia, serif; font-size: 24px; letter-spacing: -1px; }
+    .muted, footer { color: #a6afa3; }
+    .edition { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+    main { padding: 66px 0 76px; }
+    .eyebrow { color: #bdd995; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 52px); font-weight: 500; letter-spacing: -2px; margin: 14px 0; }
+    .intro { margin: 0 0 38px; color: #a6afa3; line-height: 1.6; }
+    .layout { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: start; }
+    .product { border: 1px solid #ffffff19; border-radius: 20px; overflow: hidden; background: #191d18; }
+    .art { height: 235px; position: relative; overflow: hidden; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 60%, #545e44, #262f24 70%); }
+    .art::after { content: ''; position: absolute; bottom: 23px; width: 220px; height: 17px; border-radius: 50%; background: #0007; filter: blur(12px); }
+    .lamp { position: relative; width: 190px; height: 190px; z-index: 1; }
+    .shade { position: absolute; width: 190px; height: 94px; border-radius: 100px 100px 8px 8px; background: linear-gradient(115deg, #e7ebc7, #b6c398 60%, #74855f); box-shadow: inset 0 -7px 7px #58634655; }
+    .stem { position: absolute; top: 90px; left: 86px; width: 18px; height: 88px; background: linear-gradient(90deg, #849271, #cbd4b0, #7f8b69); }
+    .base { position: absolute; bottom: 0; left: 36px; width: 118px; height: 18px; border-radius: 50% 50% 8px 8px; background: linear-gradient(#becba6, #7e8f68); }
+    .product-info { padding: 25px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    h2 { font-size: 19px; font-weight: 500; margin: 0 0 7px; }
+    p { margin: 0; }
+    .description { font-size: 13px; color: #a6afa3; }
+    .quantity-row { margin-top: 25px; padding-top: 22px; border-top: 1px solid #ffffff15; }
+    label { font-size: 14px; }
+    .stepper { display: flex; border: 1px solid #596050; border-radius: 8px; overflow: hidden; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .stepper button { width: 34px; border: 0; background: #242a21; color: #eff3e8; font-size: 20px; }
+    input[type=number] { width: 66px; text-align: center; padding: 10px 0; border: 0; background: #171c15; color: #fff; appearance: textfield; -moz-appearance: textfield; }
+    input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    :focus-visible { outline: 2px solid #c7e7a2; outline-offset: 3px; }
+    .summary { background: #1d221b; border: 1px solid #ffffff19; border-radius: 20px; padding: 28px; }
+    .summary h2 { margin-bottom: 25px; }
+    .offer { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid #718259; border-radius: 10px; background: #bdd9950a; margin-bottom: 25px; cursor: pointer; }
+    .offer input { accent-color: #c7e7a2; width: 19px; height: 19px; flex-shrink: 0; }
+    .offer strong { display: block; font-size: 14px; color: #d5eac0; margin-bottom: 5px; }
+    .offer small { color: #a6afa3; font-size: 12px; }
+    dl { margin: 0; font-size: 14px; }
+    dl .row { margin-bottom: 18px; }
+    dt { color: #afb6aa; }
+    dd { margin: 0; font-variant-numeric: tabular-nums; }
+    .savings { color: #c7e7a2; }
+    .total-row { border-top: 1px solid #ffffff20; margin-top: 23px; padding-top: 23px; }
+    .total-row dt { color: #f1f0ea; font-size: 18px; }
+    .total-row dd { font-size: 32px; letter-spacing: -1px; }
+    .currency { font-size: 11px; color: #a6afa3; text-align: right; margin: -8px 0 24px; }
+    .checkout { width: 100%; background: #c7e7a2; border: 0; color: #202918; border-radius: 9px; padding: 16px; font-weight: 650; transition: background .2s; }
+    .checkout:hover { background: #dcf7bd; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    .note { text-align: center; font-size: 11px; line-height: 1.7; color: #a6afa3; margin-top: 14px; }
+    .error { color: #ffbead; font-size: 12px; margin-top: 12px; }
+    #confirmation { color: #d5eac0; font-size: 14px; line-height: 1.6; margin-top: 18px; }
+    footer { border-top: 1px solid #ffffff15; padding: 24px 0; display: flex; justify-content: space-between; gap: 20px; font-size: 11px; }
+    @media (max-width: 700px) { .layout { grid-template-columns: 1fr; gap: 20px; } main { padding: 36px 0; } header, main, footer { width: calc(100% - 32px); } .summary { padding: 24px; } .edition { letter-spacing: 1px; font-size: 9px; } }
+  </style>
+</head>
+<body>
+  <header><div class="brand">form & field<span style="color:#c7e7a2">.</span></div><span class="edition">Objects for everyday living</span></header>
+  <main>
+    <div class="eyebrow">One good addition</div>
+    <h1>Make room for a little glow.</h1>
+    <p class="intro">Thoughtful design. A warmer space. Your order is almost ready.</p>
+    <form id="checkout-form" class="layout">
+      <section class="product" aria-label="Your item">
+        <div class="art" role="img" aria-label="Sage green dome table lamp"><div class="lamp"><div class="stem"></div><div class="shade"></div><div class="base"></div></div></div>
+        <div class="product-info">
+          <div class="row"><div><h2>The Everyday Lamp</h2><p class="description">Sage · Soft ambient light</p></div><div>$100.00<p class="description" style="text-align:right;margin-top:6px">each</p></div></div>
+          <div class="row quantity-row"><label for="quantity">Quantity</label><div class="stepper"><button type="button" id="decrease" aria-label="Decrease quantity">−</button><input id="quantity" type="number" value="1" min="1" max="9999" step="1" required aria-describedby="quantity-error"><button type="button" id="increase" aria-label="Increase quantity">+</button></div></div>
+          <p id="quantity-error" class="error" hidden>Enter a whole quantity from 1 to 9,999.</p>
+        </div>
+      </section>
+      <section class="summary" aria-labelledby="summary-title">
+        <h2 id="summary-title">Order summary</h2>
+        <label class="offer"><input id="discount" type="checkbox" checked><span><strong>A little something off. Save 25%.</strong><small>Apply your welcome discount</small></span></label>
+        <div aria-live="polite" aria-atomic="true">
+          <dl><div class="row"><dt>Subtotal</dt><dd id="subtotal">$100.00</dd></div><div class="row"><dt id="discount-label">Welcome discount (25%)</dt><dd class="savings" id="savings">−$25.00</dd></div><div class="row"><dt>Shipping</dt><dd>On us</dd></div><div class="row total-row"><dt>Total</dt><dd id="total">$75.00</dd></div></dl>
+          <p class="currency">USD · No additional charges in this demo</p>
+        </div>
+        <button class="checkout" id="submit-order" type="submit">Place demo order · $75.00 →</button>
+        <p class="note">A local checkout demo. No payment will be collected.</p>
+        <p id="confirmation" role="status" hidden></p>
+      </section>
+    </form>
+    <noscript><p class="error">Enable JavaScript to update quantities, apply discounts, and place a demo order.</p></noscript>
+  </main>
+  <footer><span>Considered essentials. Made for your everyday.</span><span>Checkout / 2.0</span></footer>
+  <script>
+    'use strict';
+    const byId = id => document.getElementById(id);
+    const quantity = byId('quantity');
+    const discount = byId('discount');
+    const money = cents => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+    const totalCents = (subtotal, percent) => Math.floor((subtotal * (100 - percent) + 50) / 100);
+    function render() {
+      const count = Number(quantity.value);
+      const valid = quantity.value.trim() !== '' && Number.isInteger(count) && count >= 1 && count <= 9999;
+      byId('quantity-error').hidden = valid;
+      quantity.setAttribute('aria-invalid', String(!valid));
+      byId('submit-order').disabled = !valid;
+      byId('decrease').disabled = valid && count <= 1;
+      byId('increase').disabled = valid && count >= 9999;
+      byId('confirmation').hidden = true;
+      const subtotal = count * 10000;
+      const total = totalCents(subtotal, discount.checked ? 25 : 0);
+      byId('subtotal').textContent = valid ? money(subtotal) : '—';
+      byId('savings').textContent = valid ? '−' + money(subtotal - total) : '—';
+      byId('discount-label').textContent = discount.checked ? 'Welcome discount (25%)' : 'Welcome discount (off)';
+      byId('total').textContent = valid ? money(total) : '—';
+      byId('submit-order').textContent = valid ? `Place demo order · ${money(total)} →` : 'Enter a valid quantity';
+      return { valid, count, total };
+    }
+    quantity.addEventListener('input', render);
+    discount.addEventListener('change', render);
+    for (const [id, delta] of [['decrease', -1], ['increase', 1]]) {
+      byId(id).addEventListener('click', () => {
+        const current = Number(quantity.value);
+        quantity.value = Math.min(9999, Math.max(1, Number.isFinite(current) ? Math.trunc(current) + delta : 1));
+        render();
+      });
+    }
+    byId('checkout-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const order = render();
+      if (!order.valid) { quantity.focus(); return; }
+      byId('confirmation').textContent = `Demo order confirmed: ${order.count} ${order.count === 1 ? 'lamp' : 'lamps'} for ${money(order.total)}. No payment was taken and no order record was saved.`;
+      byId('confirmation').hidden = false;
+    });
+    render();
+  </script>
+</body>
+</html>
