@@ -20,6 +20,7 @@ what happened     ─┘                          │
 ## install
 
 Python 3.11+, Git, and Codex 0.154.0 or later.
+The hook interpreter must be on PATH as `python3` on Unix or `python` on Windows.
 
 Linux / macOS:
 

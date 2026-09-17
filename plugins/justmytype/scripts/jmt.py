@@ -153,6 +153,26 @@ def readonly(action: dict) -> bool:
     return tokens in (["pwd"], ["git", "status"], ["git", "status", "--short"], ["git", "status", "--porcelain"])
 
 
+def literal_authorized(state: dict, cfg: dict) -> bool:
+    """Only an exact positive goal/action pair can bypass semantic judgment."""
+    if cfg.get("constraints") or state.get("constraints"):
+        return False
+    action = state.get("action", {})
+    if not readonly(action):
+        return False
+    args = action["arguments"]
+    command = " ".join(args["argv"]) if action["tool"] == "exec_argv" else args.get("command", args.get("cmd", "")).strip()
+    goal = state.get("goal", "").strip().lower().rstrip(".")
+    pairs = {
+        ("print the current directory", "pwd"),
+        ("show the current directory", "pwd"),
+        ("show git status", "git status"),
+        ("show git status --short", "git status --short"),
+        ("show git status --porcelain", "git status --porcelain"),
+    }
+    return (goal, command) in pairs
+
+
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError("redirect_refused")
@@ -238,7 +258,7 @@ def evaluate(state: Any, config: dict | None = None, transport: Callable | None 
             clean["constraints"] = clean.get("constraints", []) + redact(cfg["constraints"])
         if len(canonical(clean)) > MAX_STATE:
             return verdict("unassessed", "state_bound", {})
-        if mode == "check" and readonly(clean["action"]) and not clean.get("constraints"):
+        if mode == "check" and literal_authorized(clean, cfg):
             return verdict("pass", "literal_read", clean)
         if not cfg["cloud_enabled"] and transport is None:
             return verdict("unassessed", "cloud_disabled", clean)
@@ -269,7 +289,7 @@ def evaluate(state: Any, config: dict | None = None, transport: Callable | None 
 
 
 def assess(state: dict, cfg: dict, directory: Path, mode: str = "check") -> dict:
-    needs_remote = cfg["cloud_enabled"] and not (mode == "check" and readonly(state.get("action", {})) and not cfg["constraints"] and not state.get("constraints"))
+    needs_remote = cfg["cloud_enabled"] and not (mode == "check" and literal_authorized(state, cfg))
     if needs_remote and not os.environ.get("TYPESAFE_API_KEY") and cfg["credential_runner"] and not os.environ.get("JMT_CREDENTIAL_CHILD"):
         argv = cfg["credential_runner"] + [sys.executable, str(Path(__file__).resolve()), "--data-dir", str(directory), mode]
         try:
@@ -383,7 +403,7 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess) -
             result = verdict("unassessed", "missing_turn_context", {})
         elif name in ("write_stdin", "functions.write_stdin"):
             result = verdict("unassessed", "uncovered_continuation", {})
-        elif kind == "PreToolUse" and readonly(state["action"]) and not cfg["constraints"]:
+        elif kind == "PreToolUse" and literal_authorized(state, cfg):
             result = verdict("pass", "literal_read", state)
         elif not db.reserve(sid, tid, cfg["max_calls_per_turn"]):
             result = verdict("unassessed", "turn_budget_exhausted", {})

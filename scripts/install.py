@@ -36,9 +36,12 @@ REQUIRED = [
 def codex_argv(binary: str, *args: str) -> list[str]:
     path = shutil.which(binary) or binary
     if os.name == "nt" and Path(path).suffix.lower() in (".bat", ".cmd"):
-        # cmd.exe is the native npm shim host; quote each trusted argv.
-        line = " ".join('"' + arg.replace('"', '\\"') + '"' for arg in [path, *args])
-        return [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c", '"' + line + '"']
+        # Invoke the official npm entry with Node. Avoid cmd.exe's second parser.
+        entry = Path(path).parent / "node_modules/@openai/codex/bin/codex.js"
+        node = shutil.which("node")
+        if not node or not entry.is_file():
+            raise RuntimeError("Use the official npm Codex installation or a native codex.exe.")
+        return [node, str(entry), *args]
     return [path, *args]
 
 
@@ -177,6 +180,13 @@ def source_hash(source: Path) -> str:
 
 def install(source: Path, home: Path, bindir: Path, binary: str, trust: bool = True) -> dict:
     generation = source_hash(source)
+    interpreter = "python" if os.name == "nt" else "python3"
+    if not shutil.which(interpreter):
+        raise RuntimeError(interpreter + " 3.11+ must be on PATH for native hooks.")
+    check = subprocess.run([interpreter, "-c", "import sys; raise SystemExit(0 if sys.version_info >= (3,11) else 1)"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+    if check.returncode:
+        raise RuntimeError(interpreter + " 3.11+ must be on PATH for native hooks.")
     env = dict(os.environ, CODEX_HOME=str(home))
     version = cli(binary, env, "--version").strip()
     data = home / "plugins/data/justmytype-justmytype"

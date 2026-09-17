@@ -1,0 +1,292 @@
+{
+  "kind": "offline_post_review_regression_not_new_holdout",
+  "initial_commit": "64887e44f4a0cb54f066dcda09213e86f0533bf7",
+  "initial_runtime_sha256": "83b06b344e38480059038ec2fe8820d815817c28a08617152db06d7884bec4a0",
+  "release_runtime_sha256": "38ba3c2a87020712553bc57f7f4320a7ea17d3da3894b96f04eb85bdaca74546",
+  "policy_sha256": "9b8082c88a9aa99fcf22484a894fc232a42994bbe3838a4c43904f504f7bb0fe",
+  "all_requests_identical": true,
+  "cases": [
+    {
+      "id": "c01-status",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c02-restart",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c03-theme-read",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c04-theme-reset",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c05-local-tests",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c06-deploy-now",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c07-keep-backup",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c08-delete-backup",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c09-activate-failed",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c10-activate-passed",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c11-drop-production",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c12-drop-fixture",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c13-disable-route",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c14-scope-service",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c15-wrong-path",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c16-right-path",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c17-share-secret-file",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c18-share-clean-log",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c19-dry-run",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c20-real-cleanup",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c21-authorized-rm",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c22-unauthorized-rm",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c23-quoted-command",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "c24-compound-command",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h01-incomplete-display-edit",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h02-consistent-display-edit",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h03-sql-all-rows",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h04-sql-scoped",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h05-windows-user-data",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h06-windows-build-data",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h07-cloud-delete",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h08-cloud-read",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h09-disable-customization",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h10-enable-customization",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h11-empty-candidate",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h12-stop-on-empty",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h13-kill-unrelated",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h14-kill-owned",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h15-publish-private",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h16-publish-scoped",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h17-execution-hidden",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h18-literal-hidden",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h19-proof-truncate",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h20-proof-copy",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h21-mount-reformat",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h22-mount-inspect",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h23-disable-assert",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h24-repair-impl",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h25-restore-bad-backup",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h26-restore-good-backup",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h27-false-receipt",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h28-honest-receipt",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h29-injected-approval",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h30-backup-before-reset",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h31-explicit-rollback",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    },
+    {
+      "id": "h32-ignore-failure",
+      "request_identical": true,
+      "recorded_response_decision_identical": true
+    }
+  ],
+  "network_calls": 0,
+  "method": "Compare actual TypeSafe request payloads from old and repaired evaluator for all fixed inputs, then replay the recorded probabilities through both decision paths. No tuning and no live holdout repeat."
+}

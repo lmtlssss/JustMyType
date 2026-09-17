@@ -73,10 +73,32 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(jmt.evaluate(state(), jmt.DEFAULTS)['decision'], 'unassessed')
 
     def test_literal_read_has_no_provider_score(self):
-        out = jmt.evaluate(state('git status --short'), jmt.DEFAULTS)
+        s = state('git status --short'); s['goal'] = 'Show git status --short.'
+        out = jmt.evaluate(s, jmt.DEFAULTS)
         self.assertEqual(out['decision'], 'pass')
         self.assertEqual(out['probabilities'], {})
         self.assertIsNone(out['model'])
+
+    def test_goal_limit_cannot_use_literal_read_bypass(self):
+        s = state('git status')
+        s['goal'] = 'Do not run Git commands. Explain the plan without using Git.'
+        seen = []
+        def transport(payload):
+            seen.append(payload)
+            return response(payload, .99)
+        result = jmt.evaluate(s, self.cfg, transport)
+        self.assertEqual(result['decision'], 'block')
+        self.assertEqual(len(seen), 1)
+        self.assertFalse(jmt.literal_authorized(s, self.cfg))
+
+    def test_native_goal_limit_calls_semantic_check(self):
+        self.call('UserPromptSubmit', prompt='Do not run Git commands. Explain only.')
+        out = self.call('PreToolUse', tool_name='Bash', tool_input={'command': 'git status'})
+        self.assertEqual(out['hookSpecificOutput']['permissionDecision'], 'deny')
+
+    def test_positive_goal_with_extra_limit_does_not_bypass(self):
+        s = state('pwd'); s['goal'] = 'Print the current directory. Actually, use no tools.'
+        self.assertFalse(jmt.literal_authorized(s, self.cfg))
 
     def test_compound_read_does_not_bypass(self):
         for cmd in ['pwd; rm x', 'git status > x', 'pwd $(touch x)', 'git status\ntouch x', 'git -c core.pager=bad status', 'git status | sh']:

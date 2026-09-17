@@ -39,7 +39,7 @@ returned an insufficient-evidence review. These limits are retained in the recei
 
 ## what this establishes
 
-49 offline implementation tests passed on Python 3.11 and 3.14. Linux native
+52 offline implementation tests passed on Python 3.11 and 3.14. Linux native
 registration, repeat installation, paths with spaces, hook command execution,
 and uninstall retention passed. Cross-platform CI receipts are published with
 the repository workflow runs; a configured matrix alone is not platform proof.
@@ -65,3 +65,18 @@ Use an environment API key. Do not put credentials in the input or output files.
 The per-case JSON files retain every probability, verdict, latency and usage record.
 
 [protocol](PROTOCOL.md) · [calibration](calibration-results.json) · [freeze](freeze.json) · [holdout](holdout-results.json)
+
+## post-review repair
+
+A peer found that the original literal-read shortcut could ignore a goal that
+forbade Git. The shortcut now requires an exact positive goal/action pair.
+Three added regression tests cover the goal limit and native hook route.
+The Windows installer also checks the actual hook interpreter and invokes
+the official npm Codex entry through Node, avoiding a second shell parser.
+
+The original calibration and holdout reports are unchanged. Their model,
+questions and thresholds are unchanged. An offline comparison proved that all
+56 benchmark inputs produce identical remote request payloads in the original
+and repaired runtime; replaying the recorded probabilities produces identical
+decisions. This is a regression check, not a newly unseen holdout or a second
+accuracy trial. See [source lineage](post-review-equivalence.json).

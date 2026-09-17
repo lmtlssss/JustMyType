@@ -1,6 +1,6 @@
 param([string]$Source = '', [string]$CodexHome = '', [string]$BinDir = '', [string]$Codex = 'codex', [switch]$NoTrust, [switch]$Uninstall)
 $ErrorActionPreference = 'Stop'
-$Python = if (Get-Command python -ErrorAction SilentlyContinue) { 'python' } elseif (Get-Command py -ErrorAction SilentlyContinue) { 'py' } else { throw 'Python 3.11+ is required.' }
+$Python = if (Get-Command python -ErrorAction SilentlyContinue) { 'python' } else { throw 'Python 3.11+ must be available as python on PATH for native hooks.' }
 & $Python -c 'import sys; assert sys.version_info >= (3,11), "Python 3.11+ is required"'
 if ($LASTEXITCODE -ne 0) { throw 'Python check failed.' }
 $Temp = $null

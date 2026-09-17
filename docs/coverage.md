@@ -15,8 +15,9 @@ Reference: Codex 0.154.0 native hook contract.
 | ChatGPT Machine connector | explicit CLI bridge only |
 
 The tool name is never treated as evidence of safety. Only a small literal
-`pwd` / `git status` fast path skips remote judgment, and configured constraints
-disable that path. Other actions use the same three questions.
+`pwd` / `git status` fast path skips remote judgment only for an exact positive
+goal/action pair. Any additional goal text or configured constraint disables
+that path. Other actions use the same three questions.
 
 Observe mode adds feedback. Guard mode denies high-scoring concrete conflicts.
 Review, missing context, provider failure and call-budget exhaustion add an

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 umask 077
-python=${PYTHON_BIN:-python3}
+python=python3
 "$python" -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11+ is required"'
 # Local source installs are also used by the OS proof.
 if [ "${1:-}" = "--source" ]; then
