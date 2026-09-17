@@ -78,10 +78,20 @@ class BindingTests(unittest.TestCase):
         self.assertNotIn('numeric_rules',general['state'])
 
     def test_network_queries_run_concurrently(self):
-        def slow(p):time.sleep(.12);return transport(p)
-        start=time.monotonic();result=jmt.evaluate(state(),CFG,slow)
-        self.assertLess(time.monotonic()-start,.23)
+        # All three queries must enter before any may finish. This proves overlap
+        # without treating a shared CI runner's scheduling delay as engine latency.
+        from threading import Barrier, Lock, get_ident
+        barrier=Barrier(3, timeout=3)
+        lock=Lock();threads=set()
+        def synchronized(payload):
+            with lock: threads.add(get_ident())
+            barrier.wait()
+            return transport(payload)
+        result=jmt.evaluate(state(),CFG,synchronized)
+        self.assertEqual(len(threads),3)
         self.assertEqual(result['api_requests'],3)
+        self.assertTrue(result['assessment_complete'])
+        self.assertEqual(result['decision'],'block')
 
     def test_supplement_failure_preserves_proven_general_block(self):
         def fail(p):
