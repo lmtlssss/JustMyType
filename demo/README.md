@@ -1,3 +1,11 @@
+# demonstrations
+
+[0.1.1 release drill: real traffic, three blocked faults, tested recovery](release-drill/README.md).
+
+[Earlier Astra / medium trial: both builds succeed, no demonstrated advantage](astra-medium/README.md).
+
+## earlier 0.1.0 clip
+
 # live demo
 
 [Watch the screen recording](https://github.com/lmtlssss/JustMyType/releases/download/v0.1.0/JustMyType-live.mp4).

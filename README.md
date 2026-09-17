@@ -30,6 +30,9 @@ curl.exe -fsSL https://raw.githubusercontent.com/lmtlssss/JustMyType/main/instal
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
+Upgrading from 0.1.0: run the removal command below, then install again.
+Private settings are retained.
+
 ## switch on
 
 Set `TYPESAFE_API_KEY` in your environment.
@@ -65,14 +68,18 @@ ChatGPT does not run Codex hooks automatically.
 
 ## proof
 
-[![Live Codex screen recording](demo/live-poster.png)](https://github.com/lmtlssss/JustMyType/releases/download/v0.1.0/JustMyType-live.mp4)
+[![Live release drill](demo/release-drill/poster.png)](demo/release-drill/JustMyType-Release-Drill.mp4)
 
-[Watch the live demo](https://github.com/lmtlssss/JustMyType/releases/download/v0.1.0/JustMyType-live.mp4). 28 seconds, real Codex, synthetic data.
+[Watch the release drill](demo/release-drill/JustMyType-Release-Drill.mp4).
+54 seconds. Astra / medium. Three deliberate fault probes, then a tested repair.
+279 bad checkout responses without the plugin; zero with it. Synthetic data.
+[Method, prior failure and all results](demo/release-drill/README.md).
 
-15/16 held-out conflicts blocked. 16/16 valid actions passed. One miss.
+56 tests. Native installation verified on Linux, macOS and Windows.
+[0.1.1 changes](docs/v0.1.1.md) / [platform proof](evals/v0.1.1-platform-proof.json).
 
-52 tests. Native installation verified on Linux, macOS and Windows.
-[Results](evals/RESULTS.md) · [Platform proof](evals/platform-proof.json) · [Limits](docs/coverage.md)
+The original 0.1.0 held-out test blocked 15/16 conflicts and passed 16/16 valid
+actions, with one miss. [Original results](evals/RESULTS.md) / [limits](docs/coverage.md).
 
 ## remove
 
