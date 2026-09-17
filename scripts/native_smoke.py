@@ -36,7 +36,7 @@ def main():
         try:hooks=install.owned_hooks(rpc)
         finally:rpc.close()
         assert len(hooks)==5
-        cache=home/'plugins/cache/justmytype/justmytype/0.1.0'
+        cache=home/'plugins/cache/justmytype/justmytype'/install.VERSION
         assert (cache/'scripts/jmt.py').exists(),str(cache)
         declaration=json.loads((cache/'hooks/hooks.json').read_text())
         handler=declaration['hooks']['SessionStart'][0]['hooks'][0]

@@ -10,7 +10,7 @@ try {
         $Temp = Join-Path ([IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
         New-Item -ItemType Directory -Path $Temp | Out-Null
         $Installer = Join-Path $Temp 'install.py'
-        Invoke-WebRequest 'https://raw.githubusercontent.com/lmtlssss/JustMyType/v0.1.0/scripts/install.py' -OutFile $Installer
+        Invoke-WebRequest 'https://raw.githubusercontent.com/lmtlssss/JustMyType/v0.1.1/scripts/install.py' -OutFile $Installer
     }
     $Arguments = @($Installer, '--codex', $Codex)
     if ($Source) { $Arguments += @('--source', $Source) }

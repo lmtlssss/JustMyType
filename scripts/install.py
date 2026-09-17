@@ -18,7 +18,7 @@ import zipfile
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.request import urlopen
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 NAME = "justmytype"
 PLUGIN_ID = "justmytype@justmytype"
 RELEASE = "https://github.com/lmtlssss/JustMyType/releases/download/v" + VERSION

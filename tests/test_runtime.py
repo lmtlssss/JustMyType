@@ -227,6 +227,32 @@ class RuntimeTests(unittest.TestCase):
         out = self.call('PreToolUse', tool_name='Bash', tool_input={'command': 'touch x'})
         self.assertIn('missing_turn_context', json.dumps(out))
 
+    def test_long_receipt_retains_result_tail_and_exit_status(self):
+        raw = {'output': 'source listing\n' * 1200 + 'CHECKS: 4096; FAILURES: 4091', 'exit_code': 1}
+        text = jmt.tool_receipt(raw, {'cmd': 'cat source.py && python3 validate.py'})
+        self.assertLessEqual(len(text), 2500)
+        self.assertIn('FAILURES: 4091', text)
+        self.assertIn('"exit_code":1', text)
+        self.assertIn('python3 validate.py', text)
+        self.assertIn('INCOMPLETE OBSERVATION', text)
+
+    def test_receipt_does_not_mistake_source_prefix_for_full_result(self):
+        raw = {'output': 'assert result == True\n' * 1000 + 'ACTUAL: FAILED', 'exit_code': 1}
+        text = jmt.tool_receipt(raw, {})
+        self.assertIn('ACTUAL: FAILED', text)
+        self.assertIn('OUTPUT MIDDLE OMITTED', text)
+
+    def test_receipt_redacts_before_head_tail_selection(self):
+        text = jmt.tool_receipt({'output': 'x' * 6000 + 'password=synthetic-private-value', 'exit_code': 1}, {})
+        self.assertNotIn('synthetic-private-value', text)
+        self.assertIn('Credential-shaped', text)
+
+    def test_long_command_receipt_keeps_both_ends(self):
+        text = jmt.tool_receipt({'output': 'result', 'exit_code': 0}, {'command':'BEGIN ' + 'x' * 3000 + ' FINAL'})
+        self.assertIn('BEGIN ', text)
+        self.assertIn(' FINAL', text)
+        self.assertIn('COMMAND MIDDLE OMITTED', text)
+
     def test_posttool_retains_multiple_original_results(self):
         self.prompt()
         for i in range(3):

@@ -20,7 +20,7 @@ from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 NAME = "justmytype"
 API_URL = "https://api.typesafe.ai/v1/systemone"
 POLICY_PATH = Path(__file__).with_name("policy.json")
@@ -32,7 +32,7 @@ MAX_RESPONSE = 32768
 DEFAULTS = {"cloud_enabled": False, "mode": "observe", "credential_runner": [],
             "constraints": [], "max_calls_per_turn": 32}
 SECRET_FIELD = re.compile(r"(?i)^(?:.*[_-])?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|cookie|private[_-]?key|credentials?)$")
-ASSIGNMENT = re.compile(r'''(?ix)(\b(?:[a-z0-9_-]*[_-])?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|cookie)\b["']?\s*[:=]\s*)(?:"[^"\n]*"|'[^'\n]*'|[^\s,;}]+)''')
+ASSIGNMENT = re.compile(r'''(?ix)(\b[a-z0-9_-]*?(?:api[_-]?key|access[_-]?token|refresh[_-]?token|token|password|passwd|secret|authorization|cookie)\b["']?\s*[:=]\s*)(?:"[^"\n]*"|'[^'\n]*'|[^\s,;}]+)''')
 TOKEN = re.compile(r"\b(?:sk[-_][A-Za-z0-9_-]{12,}|gh[pousr]_[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{16,}|AKIA[A-Z0-9]{16})\b")
 PRIVATE_KEY = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", re.S)
 
@@ -351,6 +351,36 @@ class StateStore:
             self.db.execute("DELETE FROM audit WHERE id NOT IN (SELECT id FROM audit ORDER BY id DESC LIMIT 512)")
 
 
+
+def tool_receipt(raw: Any, tool_input: Any) -> str:
+    """Keep the observed exit metadata and output tail, not only a long source prefix."""
+    clean = redact(raw)
+    original_text = canonical(raw).decode("utf-8")
+    clean_text = canonical(clean).decode("utf-8")
+    command = ""
+    if isinstance(tool_input, dict):
+        value = tool_input.get("command", tool_input.get("cmd", ""))
+        if isinstance(value, str):
+            command = redact(value)
+    if len(command) > 500:
+        command = command[:230] + " [COMMAND MIDDLE OMITTED] " + command[-230:]
+    prefix = "Observed command: " + command + "\n" if command else ""
+    if original_text != clean_text:
+        clean_text = "[Credential-shaped content omitted from this receipt.]"
+    budget = 2500 - len(prefix)
+    if len(clean_text) <= budget:
+        return prefix + clean_text
+    metadata = {}
+    if isinstance(clean, dict):
+        metadata = {k: clean[k] for k in ("exit_code", "status", "isError") if k in clean}
+    label = "\n[OUTPUT MIDDLE OMITTED; INCOMPLETE OBSERVATION]\n"
+    meta = "Execution metadata: " + canonical(metadata).decode() + "\n"
+    available = budget - len(meta) - len(label)
+    head = min(550, available // 3)
+    tail = available - head
+    return prefix + meta + clean_text[:head] + label + clean_text[-tail:]
+
+
 def context(event: str, text: str) -> dict:
     return {"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}
 
@@ -379,13 +409,7 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess) -
         row = db.get(sid, tid)
         if kind == "PostToolUse":
             raw = event.get("tool_response", {})
-            clean = redact(raw)
-            original_text = canonical(raw).decode("utf-8")
-            clean_text = canonical(clean).decode("utf-8")
-            if original_text != clean_text:
-                clean_text = "[Credential-shaped content omitted from this receipt.]"
-            if len(clean_text) > 2500:
-                clean_text = clean_text[:2500] + " [TRUNCATED OBSERVATION; incomplete evidence]"
+            clean_text = tool_receipt(raw, event.get("tool_input", {}))
             db.receipt(sid, tid, str(event.get("tool_name", "unknown"))[:100] + ": " + clean_text)
             failed = isinstance(raw, dict) and (raw.get("isError") is True or (type(raw.get("exit_code")) is int and raw["exit_code"] != 0))
             return context(kind, "JustMyType: the observed tool result failed. Do not report the requested outcome as complete without new evidence.") if failed else {}
