@@ -80,3 +80,8 @@ questions and thresholds are unchanged. An offline comparison proved that all
 and repaired runtime; replaying the recorded probabilities produces identical
 decisions. This is a regression check, not a newly unseen holdout or a second
 accuracy trial. See [source lineage](post-review-equivalence.json).
+
+The repaired runtime was also tested in a fresh actual Codex agent turn.
+Both protected writes were denied and both permitted writes completed.
+The final Stop check produced a non-blocking review, not an accuracy pass.
+See the [release-source native receipt](native-release-proof.json).

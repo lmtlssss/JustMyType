@@ -42,7 +42,11 @@ def main():
         handler=declaration['hooks']['SessionStart'][0]['hooks'][0]
         event={'hook_event_name':'SessionStart','session_id':'public-smoke','source':'startup'}
         e=env|{'PLUGIN_ROOT':str(cache),'PLUGIN_DATA':str(data)}
-        if os.name=='nt':cmd=[os.environ.get('COMSPEC','cmd.exe'),'/d','/s','/c',handler['commandWindows']]
+        if os.name=='nt':
+            # Match Codex 0.154.0 command_runner.rs: /C + raw_arg(quoted command).
+            # A Python argv list would backslash-escape embedded quotes for CRT,
+            # but cmd.exe needs the raw command string, as Codex supplies it.
+            cmd=subprocess.list2cmdline([os.environ.get('COMSPEC','cmd.exe'),'/C'])+' "'+handler['commandWindows']+'"'
         else:cmd=['/bin/sh','-c',handler['command']]
         r=subprocess.run(cmd,input=json.dumps(event),env=e,text=True,capture_output=True,timeout=20)
         assert r.returncode==0,r.stderr
