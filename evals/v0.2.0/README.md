@@ -71,7 +71,7 @@ hash is retained separately and is not passed off as this final engine.
 check passed registration, five exact hook trusts, repeat install, paths with
 spaces, actual hook command launch, and removal retaining private settings.
 The release workflow checks the same contract on Linux, macOS and Windows.
-A configured workflow alone is not proof; use its completed run receipts.
+All three platform runs passed. [Completed run and platform receipts](release-validation/platform-proof.json).
 
 Four synthetic event sequences also invoked the real API through the hook CLI.
 The numeric conflict and excluded patch returned native denial JSON; approved

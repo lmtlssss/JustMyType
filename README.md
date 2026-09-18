@@ -76,7 +76,8 @@ The original refund failure is fixed: 11/11 affected proposals held, worth
 $1,693.20 in synthetic payments. All 37 valid native actions remain unblocked.
 [Release-engine regression](evals/v0.2.0/release-validation/refund-regression.json).
 
-111 implementation tests. [How 0.2.0 works](docs/v0.2.0.md).
+111 implementation tests. Linux, macOS and Windows install checks passed.
+[Platform proof](evals/v0.2.0/release-validation/platform-proof.json) / [How 0.2.0 works](docs/v0.2.0.md).
 [Earlier live refund recording and its exact source](demo/refund-desk/README.md).
 
 
