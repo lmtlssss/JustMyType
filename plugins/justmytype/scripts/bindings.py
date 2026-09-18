@@ -15,7 +15,7 @@ import shlex
 OPERATORS = {'gt': operator.gt, 'ge': operator.ge, 'lt': operator.lt,
              'le': operator.le, 'eq': operator.eq, 'ne': operator.ne}
 NUMBER = r'[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?'
-LITERAL = re.compile(r'(?P<date>\b\d{4}-\d{2}-\d{2}\b)|(?P<money>[$€£]\s*'+NUMBER+r')|(?P<number>(?<![\w.-])'+NUMBER+r')(?:\s*(?P<unit>cents?|dollars?|USD|EUR|GBP|CAD|days?|hours?|minutes?|seconds?|items?|units?|seats?|records?|files?|tokens?|retries|replicas|percent|%))?', re.I)
+LITERAL = re.compile(r'(?P<date>\b\d{4}-\d{2}-\d{2}\b)|(?P<money>[$€£]\s*'+NUMBER+r')|(?P<prefix_currency>\b(?:USD|EUR|GBP|CAD))\s*(?P<prefix_number>'+NUMBER+r')|(?P<number>(?<![\w.-])'+NUMBER+r')(?:\s*(?P<unit>cents?|dollars?|USD|EUR|GBP|CAD|days?|hours?|minutes?|seconds?|items?|units?|seats?|records?|files?|tokens?|retries|replicas|percent|%))?', re.I)
 UNITS = {'$':'money', '€':'money', '£':'money', 'cents':'money', 'cent':'money',
          'dollars':'money','dollar':'money','usd':'money','eur':'money','gbp':'money','cad':'money',
          'day':'days','hour':'hours','minute':'minutes','second':'seconds','percent':'percent','%':'percent'}
@@ -98,6 +98,8 @@ def boundaries(text):
             try: date.fromisoformat(match['date'])
             except ValueError:continue
             value,unit,scale=match['date'],'date','1'
+        elif match['prefix_currency']:
+            value=str(scalar(match['prefix_number']));unit='money';scale='1'
         elif match['money']:
             value=str(scalar(span[1:].strip()));unit='money';scale='1'
         else:
@@ -105,7 +107,7 @@ def boundaries(text):
             unit=UNITS.get(rawunit,rawunit if rawunit in ('days','hours','minutes','seconds') else 'scalar')
             scale='.01' if rawunit in ('cent','cents') else '1'
         # Currency mixing is not resolved by the model or by exchange-rate guesses.
-        currency = 'EUR' if '€' in span else 'GBP' if '£' in span else (match['unit'] or '').upper()
+        currency = 'EUR' if '€' in span else 'GBP' if '£' in span else (match['prefix_currency'] or match['unit'] or '').upper()
         if currency not in ('EUR','GBP','USD','CAD'): currency = None
         item={'span':span,'start':match.start(),'end':match.end(),'value':value,'unit':unit,'scale':scale,'currency':currency}
         if not any((x['value'],x['unit'],x['scale'],x['currency'])==(value,unit,scale,currency) for x in out):out.append(item)
@@ -142,6 +144,13 @@ def prepare(state,settings):
                 key=field['path'][-1].lower().replace('-','_')
                 for code in ('USD','EUR','GBP','CAD'):
                     if key.endswith('_'+code.lower()): return code
+                # Currency may belong to the same nested payment object.
+                parent=state['action']['arguments']
+                for part in field['path'][:-1]:
+                    if not isinstance(parent,dict):break
+                    parent=parent.get(part)
+                if isinstance(parent,dict) and parent.get('currency') in ('USD','EUR','GBP','CAD'):
+                    return parent['currency']
                 return currency
             available=[field for field in available if known_currency(field)==boundary['currency']]
         if not available: continue
@@ -155,7 +164,8 @@ def question_set(gate, settings):
     return {
       'n0_field': {'type':'choice', 'instructions':'Which numeric or date field of action.arguments is limited by instruction? Select its semantic role without comparing values. Choose none for an aggregate or missing field.',
         'criteria':{k:{'field':f['path'],'unit':f['unit']} for k,f in gate['fields'].items()} | {'none':'No offered field is the single constrained value.'}},
-      'n0_operator': {'type':'choice', 'instructions':'Read only instruction. Which relation to boundary defines the range that must NOT execute immediately, unless its prerequisite is satisfied? Interpret the words. Do not compare actual values.', 'criteria':settings['operators']},
+      'n0_operator': settings['relation_question'],
+      'n0_polarity': settings['polarity_question'],
       'n0_scope': settings['effect_question'],
       'n0_shape': settings['shape_question'],
       'n0_unmet': {'type':'noul', 'instructions':{
@@ -182,27 +192,43 @@ def authority_request(gates, state, settings):
             'action':state['action']}, questions
 
 
-def compose(gates,answers,settings):
-    records=[]
-    for i,gate in enumerate(gates):
-        field_answer=answers[f'n{i}_field'];op_answer=answers[f'n{i}_operator']
-        chosen=field_answer['choice'];op=op_answer['choice']
-        effect=answers[f'n{i}_scope'];scope=effect['probabilities']['execute'];unmet=answers[f'n{i}_unmet']['noul']
-        accepted=(chosen!='none' and op!='none' and field_answer['probabilities'][chosen]>=settings['binding_min']
-                  and op_answer['probabilities'][op]>=settings['operator_min'] and scope>=settings['scope_min'] and unmet>=settings['unmet_min'])
-        record={'source':gate['source'],'boundary_span':gate['boundary']['span'],'rule':gate['rule'],'field':None,
-                'operator':op,'comparison':None,'enforced':False,
-                'signals':{'binding':field_answer,'operator':op_answer,'effect':effect,'effect_applies':scope,'prerequisite_unmet':unmet,'shape':answers[f'n{i}_shape']}}
-        if chosen!='none' and op in OPERATORS:
-            field=gate['fields'][chosen];boundary=gate['boundary']
-            if field['unit']=='date':left=date.fromisoformat(field['value']);right=date.fromisoformat(boundary['value'])
+def compose(gates, answers, settings):
+    """Jev binds meaning. Code evaluates the exact restricted range."""
+    inverse = {'gt':'le', 'ge':'lt', 'lt':'ge', 'le':'gt', 'eq':'ne', 'ne':'eq'}
+    records = []
+    for i, gate in enumerate(gates):
+        field_answer = answers[f'n{i}_field']
+        operator_answer = answers[f'n{i}_operator']
+        polarity = answers[f'n{i}_polarity']
+        effect = answers[f'n{i}_scope']
+        unmet = answers[f'n{i}_unmet']['noul']
+        chosen, relation, use = field_answer['choice'], operator_answer['choice'], polarity['choice']
+        restricted_operator = inverse.get(relation, 'none') if use == 'required' else relation
+        accepted = (chosen != 'none' and relation in OPERATORS and use in ('required', 'restricted')
+                    and field_answer['probabilities'][chosen] >= settings['binding_min']
+                    and operator_answer['probabilities'][relation] >= settings['operator_min']
+                    and polarity['probabilities'][use] >= settings['operator_min']
+                    and effect['probabilities']['execute'] >= settings['scope_min']
+                    and (use == 'required' or unmet >= settings['unmet_min']))
+        record = {'source':gate['source'], 'rule':gate['rule'], 'boundary_span':gate['boundary']['span'],
+                  'field':None, 'operator':restricted_operator, 'literal_operator':relation,
+                  'comparison':None, 'enforced':False,
+                  'signals':{'binding':field_answer, 'operator':operator_answer, 'polarity':polarity,
+                             'effect':effect, 'effect_applies':effect['probabilities']['execute'],
+                             'prerequisite_unmet':unmet, 'shape':answers[f'n{i}_shape']}}
+        if chosen != 'none' and restricted_operator in OPERATORS and use in ('required', 'restricted'):
+            field, boundary = gate['fields'][chosen], gate['boundary']
+            if field['unit'] == 'date':
+                left, right = date.fromisoformat(field['value']), date.fromisoformat(boundary['value'])
             else:
                 with localcontext() as context:
                     context.prec = 128
-                    left=Decimal(field['value'])*Decimal(field['scale'])
-                    right=Decimal(boundary['value'])*Decimal(boundary['scale'])
-            matches=OPERATORS[op](left,right)
-            record.update(field=field['path'],comparison={'left':str(left),'operator':op,'right':str(right),'unit':field['unit'],'restricted_range':matches},enforced=bool(accepted and matches))
+                    left = Decimal(field['value']) * Decimal(field['scale'])
+                    right = Decimal(boundary['value']) * Decimal(boundary['scale'])
+            restricted = OPERATORS[restricted_operator](left, right)
+            record.update(field=field['path'], comparison={'left':str(left), 'operator':restricted_operator,
+                'right':str(right), 'unit':field['unit'], 'restricted_range':restricted},
+                enforced=bool(accepted and restricted))
         records.append(record)
     return records
 
@@ -222,13 +248,14 @@ def resolved_without_violation(record, settings, rules_settings):
         return 'explicitly_superseded'
     if authority['choice']!='active' or authority['probabilities']['active']<settings['authority_min']:
         return None
-    field=signals['binding'];op=signals['operator'];comparison=record['comparison']
+    field=signals['binding'];op=signals['operator'];comparison=record['comparison'];polarity=signals['polarity']
     if (field['choice']=='none' or field['probabilities'][field['choice']]<settings['binding_min']
-            or op['choice']=='none' or op['probabilities'][op['choice']]<settings['operator_min'] or comparison is None):
+            or op['choice']=='none' or op['probabilities'][op['choice']]<settings['operator_min']
+            or polarity['choice'] not in ('required','restricted') or polarity['probabilities'][polarity['choice']]<settings['operator_min'] or comparison is None):
         return None
     if not comparison['restricted_range']:
         return 'numeric_condition_false'
-    if effect['choice']=='execute' and effect['probabilities']['execute']>=settings['scope_min'] and signals['prerequisite_unmet']<=.1:
+    if polarity['choice']=='restricted' and effect['choice']=='execute' and effect['probabilities']['execute']>=settings['scope_min'] and signals['prerequisite_unmet']<=.1:
         return 'prerequisite_satisfied'
     return None
 
@@ -238,6 +265,6 @@ def atomic_request(blocks, state, settings):
     questions={}
     for i,block in enumerate(blocks):
         questions[f'r{i}']={'type':'choice','instructions':{
-            'question':f'Considering only `instructions[{i}].text`, does the actual `action` violate it?',
+            'question':'Does the actual action violate this specific user instruction: '+block['text'],
             **settings['instructions']},'criteria':settings['criteria']}
     return {'instructions':blocks,'action':state['action'],'evidence':state.get('evidence',[])}, questions

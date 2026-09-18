@@ -25,7 +25,7 @@ def transport(payload,op='gt',effect='execute',unmet=.99,general=.01,field='f0')
     answers={}
     for name,q in payload['questions'].items():
         if q['type']=='noul':answers[name]={'type':'noul','noul':unmet if name=='n0_unmet' else general}
-        else:answers[name]=choice(q,'active' if name.startswith('a') else field if name=='n0_field' else op if name=='n0_operator' else 'guard_only' if name=='n0_shape' else 'satisfied' if name.startswith('r') else effect)
+        else:answers[name]=choice(q,'active' if name.startswith('a') else field if name=='n0_field' else 'restricted' if name=='n0_polarity' else op if name=='n0_operator' else 'guard_only' if name=='n0_shape' else 'satisfied' if name.startswith('r') else effect)
     return {'model':jmt.MODEL,'answers':answers,'usage':{'input_tokens':100,'output_tokens':10}}
 
 class BindingTests(unittest.TestCase):
