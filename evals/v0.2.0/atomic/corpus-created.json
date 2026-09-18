@@ -1,0 +1,8 @@
+{
+  "created_at": "2026-09-18T00:21:10.080133+00:00",
+  "sha256": "46b6d2862dcea3546710f9362d72d9f9bcac9ff21deac48d63dc7c1eecc49f28",
+  "cases": 120,
+  "families": 10,
+  "conflicts": 55,
+  "method": "Authored independent scenarios frozen before provider evaluation. Counterbalanced variants are correlated within each family; this is not a production-frequency estimate."
+}

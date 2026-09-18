@@ -1,0 +1,9 @@
+{
+  "frozen_at": "2026-09-18T00:24:04.217812+00:00",
+  "engine_commit": "2ee63429759d20ba64b1ba60d548c08190f3b85a",
+  "engine_sha256": "53598af350c193740884eca520652fa7070d7c2eb85427f08a203f6cee554998",
+  "dataset_sha256": "46b6d2862dcea3546710f9362d72d9f9bcac9ff21deac48d63dc7c1eecc49f28",
+  "baseline_runtime_sha256": "628fe47d0e7d7266159f5f5d4ecd002e0d21b9829e00fb8ad30ac5822952687b",
+  "baseline_policy_sha256": "9caaa1cb0edd6f503bcb8806ddcd3b6762da0aaeff032c4a3ceda85760ca42e1",
+  "method": "120 new authored cases. Labels and complete engine fixed before paired inference. Each case runs original v0.1.1 and candidate; order alternates. Do not tune or rerun based on these outcomes. Preserve review, unavailable and false-block results."
+}
