@@ -25,7 +25,7 @@ def transport(payload,op='gt',effect='execute',unmet=.99,general=.01,field='f0')
     answers={}
     for name,q in payload['questions'].items():
         if q['type']=='noul':answers[name]={'type':'noul','noul':unmet if name=='n0_unmet' else general}
-        else:answers[name]=choice(q,'active' if name.startswith('a') else field if name=='n0_field' else op if name=='n0_operator' else effect)
+        else:answers[name]=choice(q,'active' if name.startswith('a') else field if name=='n0_field' else op if name=='n0_operator' else 'guard_only' if name=='n0_shape' else 'satisfied' if name.startswith('r') else effect)
     return {'model':jmt.MODEL,'answers':answers,'usage':{'input_tokens':100,'output_tokens':10}}
 
 class BindingTests(unittest.TestCase):
@@ -33,7 +33,8 @@ class BindingTests(unittest.TestCase):
         r=jmt.evaluate(state(),CFG,transport)
         self.assertEqual(r['decision'],'block')
         self.assertEqual(r['rule_checks'][0]['comparison']['left'],'100.01')
-        self.assertEqual(r['probabilities']['scope_conflict'],.01)
+        self.assertEqual(r['probabilities'],{})  # No fabricated score for a skipped query.
+        self.assertTrue(r['short_circuit'])
 
     def test_equality_is_not_above(self):
         self.assertEqual(jmt.evaluate(state(10000),CFG,transport)['decision'],'pass')
@@ -70,26 +71,33 @@ class BindingTests(unittest.TestCase):
 
     def test_rule_and_general_context_remain_separate(self):
         payloads=[]
-        def collect(p):payloads.append(p);return transport(p)
-        jmt.evaluate(state(),CFG,collect)
+        def fake(payload):payloads.append(payload);return transport(payload)
+        s=state(9999)
+        result=jmt.evaluate(s,CFG,fake)
         self.assertEqual(len(payloads),3)
-        general=next(p for p in payloads if 'scope_conflict' in p['questions'])
-        self.assertEqual(general['state'],state())
-        self.assertNotIn('numeric_rules',general['state'])
+        rule=next(p for p in payloads if 'n0_field' in p['questions'])
+        atomic=next(p for p in payloads if 'r0' in p['questions'])
+        self.assertEqual(rule['state']['instruction'],s['constraints'][0])
+        self.assertNotIn('instructions',rule['state'])
+        self.assertEqual(atomic['state']['action'],s['action'])
+        self.assertNotIn('numeric_fields',atomic['state'])
+        self.assertFalse(result['short_circuit'])
+        self.assertEqual(result['decision'],'pass')
 
     def test_network_queries_run_concurrently(self):
-        # All three queries must enter before any may finish. This proves overlap
+        # Binding and authority must enter before either may finish. This proves overlap
         # without treating a shared CI runner's scheduling delay as engine latency.
         from threading import Barrier, Lock, get_ident
-        barrier=Barrier(3, timeout=3)
+        barrier=Barrier(2, timeout=3)
         lock=Lock();threads=set()
         def synchronized(payload):
             with lock: threads.add(get_ident())
             barrier.wait()
             return transport(payload)
         result=jmt.evaluate(state(),CFG,synchronized)
-        self.assertEqual(len(threads),3)
-        self.assertEqual(result['api_requests'],3)
+        self.assertEqual(len(threads),2)
+        self.assertEqual(result['api_requests'],2)
+        self.assertTrue(result['short_circuit'])
         self.assertTrue(result['assessment_complete'])
         self.assertEqual(result['decision'],'block')
 
@@ -103,7 +111,7 @@ class BindingTests(unittest.TestCase):
 
     def test_general_failure_preserves_proven_numeric_block(self):
         def fail(p):
-            if 'scope_conflict' in p['questions']:raise ValueError('provider')
+            if 'r0' in p['questions']:raise ValueError('provider')
             return transport(p)
         self.assertEqual(jmt.evaluate(state(),CFG,fail)['decision'],'block')
 

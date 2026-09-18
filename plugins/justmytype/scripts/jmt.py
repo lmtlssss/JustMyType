@@ -270,75 +270,112 @@ def evaluate(state: Any, config: dict | None = None, transport: Callable | None 
             return verdict("pass", "literal_read", clean)
         if not cfg["cloud_enabled"] and transport is None:
             return verdict("unassessed", "cloud_disabled", clean)
-        questions = dict(POLICY["verification"] if mode == "verify" else POLICY["questions"])
-        numeric_rules = [] if mode == "verify" else bindings.prepare(clean, POLICY["bindings"])
-        # Independent queries run concurrently, with isolated context. A binding
-        # request cannot contaminate the legacy whole-action assessment.
-        jobs = [("general", clean, questions)] + [
-            (gate["source"], bindings.request_state(gate, clean),
-             bindings.question_set(gate, POLICY["bindings"])) for gate in numeric_rules]
-        if numeric_rules:
-            authority_state, authority_questions = bindings.authority_request(numeric_rules, clean, POLICY["bindings"])
-            jobs.append(("rule_authority", authority_state, authority_questions))
         deadline = time.monotonic() + 6
+        responses, errors = [], []
+        request_count = 0
+
         def query(job):
             try:
                 return request_api(job[1], job[2], transport, deadline=deadline)
             except (RuntimeError, ValueError, TypeError, KeyError, OSError, URLError, TimeoutError):
                 return None
-        if len(jobs) == 1:
-            responses = [query(jobs[0])]
-        else:
-            with ThreadPoolExecutor(max_workers=POLICY["bindings"]["parallel_requests"]) as pool:
-                responses = list(pool.map(query, jobs))
-        response = responses[0]
-        rule_results = []
-        total_usage = {k: sum(r["usage"][k] for r in responses if r is not None)
-                       for k in ("input_tokens", "output_tokens")}
-        errors = [jobs[i][0] for i, r in enumerate(responses) if r is None]
-        authority = responses[-1] if numeric_rules else None
-        for i, (gate, bound_response) in enumerate(zip(numeric_rules, responses[1:])):
-            if bound_response is not None:
-                record = bindings.compose([gate], bound_response["answers"], POLICY["bindings"])[0]
-                active = authority["answers"][f'a{i}'] if authority is not None else None
-                record["signals"]["authority"] = active
-                record["enforced"] = bool(record["enforced"] and active is not None
-                    and active["choice"] == "active" and active["probabilities"]["active"] >= POLICY["bindings"]["authority_min"])
-                rule_results.append(record)
-        decision, reasons, probs = "unassessed", ["provider_or_input_unavailable"], {}
-        if response is not None and mode == "verify":
-            answer = response["answers"]["support"]
-            probs = answer["probabilities"]
-            choice = answer["choice"]
-            if choice == "contradicted" and probs[choice] >= POLICY["thresholds"]["block"]:
-                decision = "block"
-            elif choice in ("supported", "no_claim") and probs[choice] >= .7:
-                decision = "pass"
+
+        def collect(jobs):
+            nonlocal request_count
+            request_count += len(jobs)
+            if len(jobs) <= 1:
+                replies = [query(job) for job in jobs]
             else:
-                decision = "review"
-            reasons = [choice]
-        elif response is not None:
-            probs = {name: response["answers"][name]["noul"] for name in POLICY["questions"]}
-            high = max(probs.values())
-            decision = "block" if high >= POLICY["thresholds"]["block"] else "review" if high >= POLICY["thresholds"]["review"] else "pass"
-            reasons = [k for k, v in probs.items() if v >= POLICY["thresholds"]["review"]] or ["no_conflict_detected"]
-        if any(r["enforced"] for r in rule_results):
-            decision = "block"
-            reasons = ["numeric_rule_violation"] + [r for r in reasons if r != "no_conflict_detected"]
+                with ThreadPoolExecutor(max_workers=POLICY["bindings"]["parallel_requests"]) as pool:
+                    replies = list(pool.map(query, jobs))
+            errors.extend(job[0] for job, result in zip(jobs, replies) if result is None)
+            responses.extend(result for result in replies if result is not None)
+            return replies
+
+        rule_results, instruction_checks = [], []
+        probs, reasons, decision = {}, [], "pass"
+        if mode == "verify":
+            reply = collect([("verification", clean, POLICY["verification"])])[0]
+            if reply is not None:
+                answer = reply["answers"]["support"]
+                probs = answer["probabilities"]
+                choice = answer["choice"]
+                decision = ("block" if choice == "contradicted" and probs[choice] >= POLICY["thresholds"]["block"]
+                            else "pass" if choice in ("supported", "no_claim") and probs[choice] >= .7 else "review")
+                reasons = [choice]
+        else:
+            blocks = bindings.rule_blocks(clean)
+            if len(blocks) > POLICY["rules"]["max_rules"]:
+                return verdict("unassessed", "instruction_count_bound", clean)
+            gates = bindings.prepare(clean, POLICY["bindings"])
+            jobs = [(f"numeric_rule_{i}", bindings.request_state(gate, clean),
+                     bindings.question_set(gate, POLICY["bindings"])) for i, gate in enumerate(gates)]
+            if gates:
+                authority_state, authority_questions = bindings.authority_request(gates, clean, POLICY["bindings"])
+                jobs.append(("rule_authority", authority_state, authority_questions))
+            replies = collect(jobs)
+            authority = replies[-1] if gates else None
+            cleared = set()
+            for i, (gate, reply) in enumerate(zip(gates, replies)):
+                if reply is None:
+                    continue
+                record = bindings.compose([gate], reply["answers"], POLICY["bindings"])[0]
+                active = authority["answers"][f"a{i}"] if authority else None
+                record["signals"]["authority"] = active
+                record["enforced"] = bool(record["enforced"] and active and active["choice"] == "active"
+                    and active["probabilities"]["active"] >= POLICY["bindings"]["authority_min"])
+                resolved = bindings.resolved_without_violation(record, POLICY["bindings"], POLICY["rules"])
+                record["resolved_without_violation"] = resolved
+                if resolved:
+                    cleared.add((gate["source"], gate["rule"]))
+                rule_results.append(record)
+            if any(record["enforced"] for record in rule_results):
+                # An exact, source-bound violation is decisive. Do not pay to
+                # reclassify the same number or pretend all other rules ran.
+                decision, reasons = "block", ["numeric_rule_violation"]
+            else:
+                remaining = [block for block in blocks if (block["source"], block["text"]) not in cleared]
+                atomic_state, questions = bindings.atomic_request(remaining, clean, POLICY["rules"])
+                # Preserve independent irreversible-effect and failed-candidate
+                # checks. Scope is evaluated per instruction, not as one vague score.
+                questions.update({name: question for name, question in POLICY["questions"].items()
+                                  if name != "scope_conflict"})
+                reply = collect([("remaining_instructions", atomic_state, questions)])[0]
+                if reply is not None:
+                    for name in ("irreversible_without_basis", "failed_candidate"):
+                        value = reply["answers"][name]["noul"]
+                        probs[name] = value
+                        if value >= POLICY["thresholds"]["block"]:
+                            decision = "block"
+                            reasons.append(name)
+                        elif value >= POLICY["thresholds"]["review"]:
+                            if decision != "block": decision = "review"
+                            reasons.append(name)
+                    for i, block in enumerate(remaining):
+                        answer = reply["answers"][f"r{i}"]
+                        violation = answer["probabilities"]["violated"]
+                        unknown = answer["probabilities"]["unknown"]
+                        disposition = "block" if violation >= POLICY["rules"]["block_min"] else (
+                            "review" if max(violation, unknown) >= POLICY["rules"]["review_min"] else "pass")
+                        instruction_checks.append({**block, "answer": answer, "disposition": disposition})
+                        if disposition == "block":
+                            decision = "block"
+                            reasons.append("instruction_conflict")
+                        elif disposition == "review":
+                            if decision != "block": decision = "review"
+                            reasons.append("instruction_uncertain")
         if errors and decision != "block":
-            decision = "unassessed"
-            reasons = ["partial_assessment_unavailable"]
-        output = verdict(decision, reasons, clean, probabilities=probs,
-                         usage=total_usage,
-                         latency=(time.monotonic() - started) * 1000, basis="typesafe" if any(r is not None for r in responses) else "local", model=MODEL if any(r is not None for r in responses) else None)
-        output["rule_checks"] = rule_results
-        output["api_requests"] = len(jobs)
-        output["assessment_complete"] = not errors
-        output["unavailable_checks"] = errors
+            decision, reasons = "unassessed", ["partial_assessment_unavailable"]
+        usage = {k: sum(r["usage"][k] for r in responses) for k in ("input_tokens", "output_tokens")}
+        output = verdict(decision, list(dict.fromkeys(reasons)) or ["no_conflict_detected"], clean,
+                         probabilities=probs, usage=usage, latency=(time.monotonic()-started)*1000,
+                         basis="typesafe" if responses else "local", model=MODEL if responses else None)
+        output.update(rule_checks=rule_results, instruction_checks=instruction_checks,
+                      api_requests=request_count, assessment_complete=not errors,
+                      unavailable_checks=errors, short_circuit=bool(mode == "check" and any(r["enforced"] for r in rule_results)))
         return output
     except (RuntimeError, ValueError, TypeError, KeyError, OSError, URLError, TimeoutError):
-        # No exception body or request headers can reach logs/stdout.
-        return verdict("unassessed", "provider_or_input_unavailable", {}, latency=(time.monotonic() - started) * 1000)
+        return verdict("unassessed", "provider_or_input_unavailable", {}, latency=(time.monotonic()-started)*1000)
 
 
 def assess(state: dict, cfg: dict, directory: Path, mode: str = "check") -> dict:

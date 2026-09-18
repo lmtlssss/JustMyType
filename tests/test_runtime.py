@@ -27,8 +27,12 @@ def response(payload, p=.01, support='supported'):
     for key, question in payload['questions'].items():
         if question['type'] == 'noul':
             answers[key] = {'type': 'noul', 'noul': p}
-        else:
+        elif key == 'support':
             answers[key] = {'type': 'choice', 'choice': support, 'probabilities': {x: .97 if x == support else .01 for x in question['criteria']}, 'confidence': .95}
+        else:
+            # The new contract has one categorical result per instruction.
+            answers[key] = {'type':'choice','choice':'satisfied','confidence':.99,
+                            'probabilities':{x:.99 if x=='satisfied' else .01/3 for x in question['criteria']}}
     return {'model': jmt.MODEL, 'answers': answers, 'usage': {'input_tokens': 300, 'output_tokens': 21}}
 
 
@@ -146,7 +150,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_missing_answer_is_not_a_pass(self):
         def bad(p):
-            out = response(p); out['answers'].pop('scope_conflict'); return out
+            out = response(p); out['answers'].pop('r0'); return out
         self.assertEqual(jmt.evaluate(state(), self.cfg, bad)['decision'], 'unassessed')
 
     def test_invalid_usage_is_not_a_pass(self):
