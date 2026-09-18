@@ -57,3 +57,10 @@ class LiteralRulesTests(unittest.TestCase):
         out=jmt.evaluate(s,CFG,transport)
         self.assertEqual(out['decision'],'pass')
         self.assertFalse(out['rule_checks'][0]['comparison']['restricted_range'])
+
+    def test_authority_question_quotes_the_actual_rule(self):
+        source=state(15000)
+        gates=jmt.bindings.prepare(source,jmt.POLICY['bindings'])
+        _,questions=jmt.bindings.authority_request(gates,source,jmt.POLICY['bindings'])
+        self.assertIn(gates[0]['rule'],questions['a0']['instructions']['question'])
+        self.assertNotIn('candidate_rules[0]',questions['a0']['instructions']['question'])

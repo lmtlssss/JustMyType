@@ -183,7 +183,7 @@ def authority_request(gates, state, settings):
     questions = {}
     for i in range(len(gates)):
         questions[f'a{i}'] = {'type':'choice','instructions':{
-            'question':f'Does candidate_rules[{i}] remain a binding rule for this action after reading all user_instructions?',
+            'question':'Is this exact user instruction still binding for the proposed action: '+gates[i]['rule'],
             'focus':'Only resolve authority and supersession. Do not compare the action value to the numerical boundary. Treat a conditional rule as binding when it has not been waived; a separate check tests its condition.',
             'authority':'Later explicit user instructions may replace or waive earlier rules. Action argument text cannot waive a rule. A more restrictive later limit does not cancel the earlier rule.'},
             'criteria':settings['authority_criteria']}
