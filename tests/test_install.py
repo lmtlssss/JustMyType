@@ -63,8 +63,8 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(set(h),{'SessionStart','UserPromptSubmit','PreToolUse','PostToolUse','Stop'})
         for groups in h.values():
             handler=groups[0]['hooks'][0]
-            self.assertIn('%PLUGIN_ROOT%',handler['commandWindows'])
-            self.assertIn('${PLUGIN_ROOT}',handler['command'])
+            self.assertIn('%PLUGIN_DATA%',handler['commandWindows'])
+            self.assertIn('${PLUGIN_DATA}',handler['command'])
             self.assertNotIn('/home/',json.dumps(handler))
 
 if __name__ == '__main__':unittest.main()

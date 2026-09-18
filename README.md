@@ -30,8 +30,8 @@ curl.exe -fsSL https://raw.githubusercontent.com/lmtlssss/JustMyType/main/instal
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-Upgrading from 0.1.x: run the removal command below, then install again.
-Private settings are retained.
+Upgrades are in place: the installer stages an immutable payload, atomically
+switches the stable dispatcher, and keeps existing private settings.
 
 ## switch on
 
@@ -68,15 +68,15 @@ ChatGPT does not run Codex hooks automatically.
 
 ## proof
 
-96 new cases. Conflicts blocked: **41/52 → 50/52**. One false block in each version.
-Median check: **351 → 490 ms**. More checks, more tokens.
+The measurements below are v0.2.0 evidence, not new v0.2.1 release proof.
 [Measured results, errors and cost](evals/v0.2.0/README.md).
 
 The original refund failure is fixed: 11/11 affected proposals held, worth
 $1,693.20 in synthetic payments. All 37 valid native actions remain unblocked.
 [Release-engine regression](evals/v0.2.0/release-validation/refund-regression.json).
 
-111 implementation tests. Linux, macOS and Windows install checks passed.
+111 implementation tests and Linux, macOS and Windows install checks passed for
+v0.2.0; these are not v0.2.1 release proof.
 [Platform proof](evals/v0.2.0/release-validation/platform-proof.json) / [How 0.2.0 works](docs/v0.2.0.md).
 [Earlier live refund recording and its exact source](demo/refund-desk/README.md).
 
@@ -84,10 +84,11 @@ $1,693.20 in synthetic payments. All 37 valid native actions remain unblocked.
 ## remove
 
 ```sh
-python3 "$HOME/.codex/plugins/data/justmytype-justmytype/package/scripts/install.py" --uninstall
+python3 "$HOME/.codex/plugins/data/justmytype-justmytype/hook.py" --uninstall
 ```
 
-Windows: use `python` and your user-profile path. Private settings are retained.
+This uses the installed stable wrapper. Windows uses `python` and the
+equivalent user-profile data path. Private settings are retained.
 
 ## build
 

@@ -22,7 +22,7 @@ from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 NAME = "justmytype"
 API_URL = "https://api.typesafe.ai/v1/systemone"
 POLICY_PATH = Path(__file__).with_name("policy.json")
@@ -77,6 +77,56 @@ def data_dir(explicit: str | Path | None = None) -> Path:
     if override:
         return Path(override).expanduser().resolve()
     return Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))).expanduser().resolve() / "plugins/data/justmytype-justmytype"
+
+
+def graphfather_context(session_id: str, directory: Path | None = None, loader: Callable | None = None) -> dict:
+    """Read bounded active-task context through GraphFather's public CLI only."""
+    if not isinstance(session_id, str) or not session_id:
+        return {"status": "unassessed", "reason": "missing_turn_context"}
+    if loader is not None:
+        try:
+            value = loader(session_id)
+            return _validate_graph(value)
+        except Exception:
+            return {"status": "unassessed", "reason": "context_unavailable"}
+    root = (directory or data_dir()).parent / "the-graphfather-the-graphfather"
+    binary = root / ("the-graphfather.exe" if os.name == "nt" else "the-graphfather")
+    if not binary.is_file() or not os.access(binary, os.X_OK):
+        return {"status": "absent"}
+    try:
+        proc = subprocess.run([str(binary), "--data-dir", str(root), "--session", session_id, "status", "--json"],
+                              stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=1, check=False)
+        if len(proc.stdout) > 262144 or proc.returncode not in (0, 2):
+            return {"status": "unassessed", "reason": "malformed_context"}
+        raw = json.loads(proc.stdout.decode("utf-8"))
+        if not isinstance(raw, dict):
+            return {"status": "unassessed", "reason": "malformed_context"}
+        return _validate_graph(raw)
+    except (OSError, subprocess.TimeoutExpired, ValueError, UnicodeError):
+        return {"status": "unassessed", "reason": "context_unavailable"}
+
+
+def _validate_graph(value: Any) -> dict:
+    if not isinstance(value, dict):
+        return {"status": "unassessed", "reason": "malformed_context"}
+    if value.get("status") in ("absent", "unassessed"):
+        reason = value.get("reason", "malformed_context")
+        if reason not in ("context_unavailable", "malformed_context"):
+            reason = "malformed_context"
+        return {"status": value["status"], "reason": reason}
+    if value.get("schema") != 1:
+        return {"status": "unassessed", "reason": "malformed_context"}
+    if ("blueprint" in value and value["blueprint"] is None) or value.get("phase") in ("complete", "done"):
+        return {"status": "absent"}
+    b, c = value.get("blueprint"), value.get("cursor")
+    if (len(canonical(value)) > 262144 or value.get("phase") not in ("build", "proof", "repair", "complete", "done")
+            or not isinstance(value.get("session_id"), str) or not value["session_id"] or len(value["session_id"]) > 256
+            or not isinstance(b, dict) or not isinstance(b.get("objective"), str) or not b["objective"]
+            or len(b["objective"]) > 6000 or not isinstance(c, dict) or not isinstance(c.get("layer"), str) or not isinstance(c.get("next"), str) or len(c["next"]) > 6000
+            or type(value.get("revision")) is not int or value["revision"] < 0
+            or type(value.get("generation")) is not int or value["generation"] < 0):
+        return {"status": "unassessed", "reason": "malformed_context"}
+    return value
 
 
 def load_config(directory: Path | None = None) -> dict:
@@ -179,6 +229,26 @@ def literal_authorized(state: dict, cfg: dict) -> bool:
     return (goal, command) in pairs
 
 
+def eligibility_reason(state: Any, mode: str, cfg: dict) -> str | None:
+    if mode not in ("check", "verify") or not valid_state(state, mode):
+        return "malformed_state"
+    if mode == "check":
+        tool, args = state["action"]["tool"], state["action"]["arguments"]
+        if tool in ("Bash", "exec_command", "shell_command", "shell", "apply_patch"):
+            if not isinstance(args.get("command", args.get("cmd")), str): return "malformed_tool_arguments"
+        elif tool == "exec_argv":
+            if not strings(args.get("argv")) or not args["argv"]: return "malformed_tool_arguments"
+        elif tool in ("write_stdin", "functions.write_stdin"): return "uncovered_continuation"
+        elif not tool.startswith("mcp__"): return "unsupported_tool"
+        clean = redact(state)
+        merged = dict(clean)
+        merged["constraints"] = clean.get("constraints", []) + redact(cfg.get("constraints", []))
+        if len(canonical(merged)) > MAX_STATE: return "state_bound"
+    elif len(canonical(redact(state))) > MAX_STATE:
+        return "state_bound"
+    return None
+
+
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError("redirect_refused")
@@ -250,19 +320,10 @@ def evaluate(state: Any, config: dict | None = None, transport: Callable | None 
     cfg = dict(DEFAULTS) | (config or {})
     started = time.monotonic()
     try:
-        if mode not in ("check", "verify") or not valid_state(state, mode):
-            return verdict("unassessed", "malformed_state", {})
+        reason = eligibility_reason(state, mode, cfg)
+        if reason: return verdict("unassessed", reason, {})
         clean = redact(state)
         if mode == "check":
-            tool, args = clean["action"]["tool"], clean["action"]["arguments"]
-            if tool in ("Bash", "exec_command", "shell_command", "shell", "apply_patch"):
-                if not isinstance(args.get("command", args.get("cmd")), str):
-                    return verdict("unassessed", "malformed_tool_arguments", {})
-            elif tool == "exec_argv":
-                if not strings(args.get("argv")) or not args["argv"]:
-                    return verdict("unassessed", "malformed_tool_arguments", {})
-            elif not tool.startswith("mcp__"):
-                return verdict("unassessed", "unsupported_tool", {})
             clean["constraints"] = clean.get("constraints", []) + redact(cfg["constraints"])
         if len(canonical(clean)) > MAX_STATE:
             return verdict("unassessed", "state_bound", {})
@@ -401,6 +462,7 @@ class StateStore:
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.db = sqlite3.connect(directory / "state.sqlite3", timeout=2)
         self.db.execute("CREATE TABLE IF NOT EXISTS turns (sid TEXT, tid TEXT, goal TEXT, evidence TEXT, calls INTEGER, corrected INTEGER, updated REAL, PRIMARY KEY(sid,tid))")
+        self.db.execute("CREATE TABLE IF NOT EXISTS task_outcomes (task TEXT, action TEXT, generation TEXT, outcome TEXT, failed INTEGER, updated REAL, PRIMARY KEY(task,action))")
         self.db.execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY, event TEXT, tool TEXT, decision TEXT, reasons TEXT, latency REAL, tokens INTEGER, policy TEXT)")
         if os.name != "nt":
             os.chmod(directory / "state.sqlite3", 0o600)
@@ -440,9 +502,21 @@ class StateStore:
             self.db.execute("INSERT INTO audit(event,tool,decision,reasons,latency,tokens,policy) VALUES(?,?,?,?,?,?,?)", (event, tool[:100], result["decision"], ",".join(result["reason_codes"]), result["latency_ms"], result["usage"].get("input_tokens", 0), result["policy_sha256"]))
             self.db.execute("DELETE FROM audit WHERE id NOT IN (SELECT id FROM audit ORDER BY id DESC LIMIT 512)")
 
+    def task_outcome(self, task: str, action: str, generation: str, outcome: str, failed: bool):
+        outcome = redact(outcome)
+        with self.db:
+            self.db.execute("INSERT OR REPLACE INTO task_outcomes VALUES (?,?,?,?,?,?)", (task, action, generation, outcome, int(failed), time.time()))
+            self.db.execute("DELETE FROM task_outcomes WHERE task=? AND rowid NOT IN (SELECT rowid FROM task_outcomes WHERE task=? ORDER BY failed DESC,updated DESC LIMIT 32)", (task, task))
+            self.db.execute("DELETE FROM task_outcomes WHERE updated < ?", (time.time() - 604800,))
+            self.db.execute("DELETE FROM task_outcomes WHERE task NOT IN (SELECT task FROM task_outcomes GROUP BY task ORDER BY MAX(updated) DESC LIMIT 128)")
+
+    def task_evidence(self, task: str, limit: int = 8, current_generation=None) -> list[str]:
+        rows = self.db.execute("SELECT outcome,generation,failed FROM task_outcomes WHERE task=? ORDER BY failed DESC,updated DESC LIMIT ?", (task, limit)).fetchall()
+        return [f"[Observed generation {generation}; {'current generation; observation is not proof of later state' if generation == str(current_generation) else 'prior generation; not current proof'}] {outcome}" for outcome, generation, failed in rows]
 
 
-def tool_receipt(raw: Any, tool_input: Any) -> str:
+
+def tool_receipt(raw: Any, tool_input: Any, max_chars: int = 2500) -> str:
     """Keep the observed exit metadata and output tail, not only a long source prefix."""
     clean = redact(raw)
     original_text = canonical(raw).decode("utf-8")
@@ -457,7 +531,7 @@ def tool_receipt(raw: Any, tool_input: Any) -> str:
     prefix = "Observed command: " + command + "\n" if command else ""
     if original_text != clean_text:
         clean_text = "[Credential-shaped content omitted from this receipt.]"
-    budget = 2500 - len(prefix)
+    budget = max_chars - len(prefix)
     if len(clean_text) <= budget:
         return prefix + clean_text
     metadata = {}
@@ -475,7 +549,7 @@ def context(event: str, text: str) -> dict:
     return {"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}
 
 
-def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess) -> dict:
+def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, task_loader: Callable | None = None) -> dict:
     kind = event.get("hook_event_name", event.get("type"))
     if kind == "SessionStart":
         status = "cloud on; " + cfg["mode"] if cfg["cloud_enabled"] else "cloud off; no remote checks"
@@ -497,11 +571,26 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess) -
             db.prompt(sid, tid, goal if len(goal) <= 6000 else "")
             return {} if len(goal) <= 6000 else {"systemMessage": "JustMyType: prompt exceeds 6000 characters; automatic preflight unavailable for this turn. Use a bounded explicit check."}
         row = db.get(sid, tid)
+        graph = graphfather_context(event.get("session_id"), directory, task_loader)
+        active = graph if graph.get("schema") == 1 and isinstance(graph.get("blueprint"), dict) and isinstance(graph.get("cursor"), dict) else {}
+        objective = active.get("blueprint", {}).get("objective")
+        canonical_session = active.get("session_id")
+        revision = active.get("revision")
+        generation = active.get("generation")
+        task_key = digest({"calling_sid": sid, "canonical_session": canonical_session,
+                           "redacted_objective": redact(objective)}) if canonical_session and objective else None
         if kind == "PostToolUse":
             raw = event.get("tool_response", {})
             clean_text = tool_receipt(raw, event.get("tool_input", {}))
             db.receipt(sid, tid, str(event.get("tool_name", "unknown"))[:100] + ": " + clean_text)
             failed = isinstance(raw, dict) and (raw.get("isError") is True or (type(raw.get("exit_code")) is int and raw["exit_code"] != 0))
+            if task_key and row:
+                action = digest(redact({"tool": event.get("tool_name", ""), "arguments": event.get("tool_input", {}), "cwd": event.get("cwd", "")}))
+                identity = str(event.get("tool_name", "unknown"))[:100]
+                safe_args = redact(event.get("tool_input", {}))
+                command = safe_args.get("command", safe_args.get("cmd", canonical(safe_args).decode())) if isinstance(safe_args, dict) else canonical(safe_args).decode()
+                db.task_outcome(task_key, action, str(generation or ""),
+                                tool_receipt(raw, {"command": identity + ": " + str(command) + " cwd=" + redact(event.get("cwd", ""))}, 900), failed)
             return context(kind, "JustMyType: the observed tool result failed. Do not report the requested outcome as complete without new evidence.") if failed else {}
         if not cfg["cloud_enabled"]:
             return {}
@@ -509,14 +598,24 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess) -
             return {}
         name = event.get("tool_name", "")
         args = event.get("tool_input", {})
-        state = {"goal": row["goal"] if row else "", "action": {"tool": name, "arguments": args},
+        latest = row["goal"] if row else ""
+        if objective and latest:
+            latest = str(objective) + "\nLatest instruction (takes precedence): " + latest
+        state = {"goal": latest, "action": {"tool": name, "arguments": args, "cwd": redact(event.get("cwd", ""))},
                  "evidence": row["evidence"] if row else [], "constraints": []}
+        if task_key:
+            state["evidence"] = (state["evidence"] + db.task_evidence(task_key, current_generation=generation))[-14:]
+            state["task_context"] = {"revision": revision, "generation": generation, "canonical_session": canonical_session, "cursor": {"layer": active["cursor"]["layer"], "next": active["cursor"]["next"]}}
         if kind == "Stop":
-            state = {"claim": event.get("last_assistant_message") or "", "evidence": row["evidence"] if row else []}
+            state["claim"] = event.get("last_assistant_message") or ""
+            state.pop("action", None)
+        eligibility = eligibility_reason(state, "verify" if kind == "Stop" else "check", cfg)
         if not row or not row["goal"]:
             result = verdict("unassessed", "missing_turn_context", {})
-        elif name in ("write_stdin", "functions.write_stdin"):
-            result = verdict("unassessed", "uncovered_continuation", {})
+        elif eligibility:
+            result = verdict("unassessed", eligibility, {})
+        elif graph.get("status") == "unassessed":
+            result = verdict("unassessed", graph.get("reason", "missing_turn_context"), {})
         elif kind == "PreToolUse" and literal_authorized(state, cfg):
             result = verdict("pass", "literal_read", state)
         elif not db.reserve(sid, tid, cfg["max_calls_per_turn"]):

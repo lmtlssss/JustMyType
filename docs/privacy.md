@@ -1,8 +1,9 @@
 # privacy
 
-Cloud checks are off at installation. Enabling them sends the current bounded
-goal, proposed action, relevant tool-result snippets and configured constraints
-to `https://api.typesafe.ai/v1/systemone`. TypeSafe handles those requests under
+Cloud checks are off at installation. Upgrades preserve the existing cloud
+mode. Enabling them sends the current bounded goal, proposed action, relevant
+tool-result snippets and configured constraints to
+`https://api.typesafe.ai/v1/systemone`. TypeSafe handles those requests under
 its own terms. This project does not make a provider retention guarantee.
 
 No full transcript is read or uploaded. No analytics endpoint is used. No API
@@ -14,9 +15,14 @@ private-key blocks and known credential values in the process environment.
 This is best-effort. It does not guarantee that arbitrary private content is
 removed. Do not enable cloud mode on material that must not leave the machine.
 
-Local SQLite keeps at most 128 recent turns, six bounded observations per turn,
-and 512 metadata-only assessment records. Turns older than seven days are
-removed on the next prompt. State is keyed by session and turn, not directory.
+Local SQLite keeps at most 128 task keys. Each task keeps at most 32 bounded
+outcomes, and each assessment exports at most eight bounded observations.
+Records older than seven days are removed by cleanup. State is keyed by the
+same calling session ID and canonical GraphFather objective, with generation
+tags; it is not keyed by directory. When cloud mode is enabled, a request may
+also include the bounded GraphFather objective and cursor plus prior actual
+observations for that task. It does not include transcripts. Redaction remains
+best-effort as described above.
 Uninstall retains private data. Delete the reported data directory manually
 only after deciding that those records and settings are no longer needed.
 

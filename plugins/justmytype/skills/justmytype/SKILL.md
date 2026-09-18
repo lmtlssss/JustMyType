@@ -5,6 +5,10 @@ description: Check a planned action against the user's goal, or verify a complet
 # JustMyType
 
 Native hooks retain the current turn's bounded goal and observations. No transcript crawl.
+An active GraphFather task context is optional and source-qualified: use its
+objective, revision/cursor, and latest user instruction priority only. Do not
+scan transcripts or infer context from the cwd. Outcomes stay bounded to the
+calling session and task, with generation labels; model verdicts are not proof.
 Use `justmytype doctor` to check the installed mode and configuration.
 Use `justmytype check --input FILE` with JSON:
 
@@ -16,11 +20,17 @@ Use `justmytype verify --input FILE` with `claim` and chronological `evidence` s
 A block means reconcile the action, not find a different tool to bypass the same constraint.
 A review or unassessed result is not approval. Missing evidence must stay missing.
 A pass means no conflict was detected by these questions. It is not a security guarantee.
+Unsupported or malformed calls are rejected before spending the existing
+32-call budget.
 Keep the user's permission, native approvals, sandbox, and real test requirements unchanged.
 Do not put credentials in input files. Cloud mode sends bounded redacted snippets to TypeSafe.
 ChatGPT Machine calls do not automatically execute Codex hooks. For an explicit bridge,
 use the installed `justmytype check`, or `justmytype guard --goal TEXT -- COMMAND ARGS`.
 Both read the same private configuration; guard executes argv only after a pass.
+
+Native hooks fail open on provider/review failures. The explicit CLI `guard`
+remains pass-only. Hosted tools and later `write_stdin` input remain outside
+native hook coverage.
 
 Numeric and date limits use source-bound field selection and exact comparisons.
 A `numeric_rule_violation` includes the field, original bound, and comparison in

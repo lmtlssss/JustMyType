@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
-            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
+            "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
             "timeout": 12
           }
         ]
@@ -19,8 +19,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
-            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
+            "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
             "timeout": 12
           }
         ]
@@ -32,8 +32,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
-            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
+            "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
             "timeout": 12
           }
         ]
@@ -45,8 +45,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
-            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
+            "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
             "timeout": 12
           }
         ]
@@ -58,8 +58,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${PLUGIN_ROOT}/scripts/jmt.py\" hook",
-            "commandWindows": "python \"%PLUGIN_ROOT%\\scripts\\jmt.py\" hook",
+            "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
+            "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
             "timeout": 12
           }
         ]

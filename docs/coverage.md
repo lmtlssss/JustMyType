@@ -1,5 +1,8 @@
 # coverage
 
+This documents the v0.2.1 coverage boundary. Numbered measurements and
+platform counts in the v0.2.0 links below remain v0.2.0 evidence only.
+
 Reference: Codex 0.154.0 native hook contract.
 
 | surface | handling |
@@ -8,11 +11,18 @@ Reference: Codex 0.154.0 native hook contract.
 | apply_patch | native command payload, including patch targets |
 | MCP tools | native tool name and JSON arguments |
 | code-mode nested local calls | Codex's inner native tool hooks |
-| Stop | claim compared with this turn's stored observations |
+| Stop | claim compared with the bounded current turn and same-task actual observations |
 | hosted web/image tools | not intercepted |
 | later write_stdin input | not a new preflight boundary |
 | subagent without its own prompt/turn context | unassessed, not inferred from cwd |
 | ChatGPT Machine connector | explicit CLI bridge only |
+
+An optional active GraphFather context may contribute only its objective,
+revision/cursor, and latest user instruction priority. It is read through the
+explicit source/CLI context, never by scanning transcripts or guessing from
+the cwd. Task outcomes remain bounded to the calling session and task,
+generation-labeled; a model verdict is not proof. Unsupported or malformed
+calls are rejected before reserving the existing 32-call budget.
 
 The tool name is never treated as evidence of safety. Only a small literal
 `pwd` / `git status` fast path skips remote judgment only for an exact positive
