@@ -7,5 +7,8 @@
   "cases": 96,
   "conflicts": 52,
   "families": 8,
-  "method": "New authored operating-policy inputs, frozen before paired calls. Variants are correlated within families. Compare v0.1.1 with candidate; alternate call order. Retain every review, missing assessment and false block. This is not a production error-rate study."
+  "method": "New authored operating-policy inputs, frozen before paired calls. Variants are correlated within families. Compare v0.1.1 with candidate; alternate call order. Retain every review, missing assessment and false block. This is not a production error-rate study.",
+  "baseline_runtime_sha256": "628fe47d0e7d7266159f5f5d4ecd002e0d21b9829e00fb8ad30ac5822952687b",
+  "schema_corrected_at": "2026-09-18T00:44:15.759742+00:00",
+  "schema_note": "Added the evaluator-required field name before inference. The first launch stopped at metadata validation with zero provider calls. Input, labels and engine hashes are unchanged."
 }
