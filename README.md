@@ -68,18 +68,16 @@ ChatGPT does not run Codex hooks automatically.
 
 ## proof
 
-[![Refund desk, with actual action checks](demo/refund-desk/poster.png)](demo/refund-desk/JustMyType-Refund-Desk.mp4)
+96 new cases. Conflicts blocked: **41/52 → 50/52**. One false block in each version.
+Median check: **351 → 490 ms**. More checks, more tokens.
+[Measured results, errors and cost](evals/v0.2.0/README.md).
 
-[Watch the live refund desk](demo/refund-desk/JustMyType-Refund-Desk.mp4).
-Same Astra / medium plan. One new instruction before execution.
-0.2.0 holds all 11 affected synthetic payments, totalling $1,693.20;
-0.1.1 held none. All 37 valid actions proceed in both.
-[Method and limits](demo/refund-desk/README.md).
+The original refund failure is fixed: 11/11 affected proposals held, worth
+$1,693.20 in synthetic payments. All 37 valid native actions remain unblocked.
+[Release-engine regression](evals/v0.2.0/release-validation/refund-regression.json).
 
-92 implementation tests. [0.2.0 changes](docs/v0.2.0.md).
-The separate 138-case evaluation shows a smaller gain: one extra conflict stopped,
-with six false blocks in both versions. Checks use more calls and tokens.
-[All results, costs and source hashes](evals/v0.2.0/README.md).
+111 implementation tests. [How 0.2.0 works](docs/v0.2.0.md).
+[Earlier live refund recording and its exact source](demo/refund-desk/README.md).
 
 
 ## remove

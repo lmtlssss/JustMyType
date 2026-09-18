@@ -1,5 +1,11 @@
 # refund desk
 
+This recording uses the earlier development engine identified in recording.json.
+It is retained as genuine prototype footage, not relabeled as a recording of the
+final release. The [final 0.2.0 regression](../../evals/v0.2.0/release-validation/refund-regression.json)
+rechecks all 48 unchanged proposals and retains its ten non-blocking reviews.
+
+
 [Watch the live recording](JustMyType-Refund-Desk.mp4) · [Open the recorded app](JustMyType-Refund-Desk.html)
 
 Astra / medium prepared 48 decisions under the original refund policy.

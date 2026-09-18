@@ -1,0 +1,10 @@
+{
+  "kind": "independent_count_and_source_readback",
+  "checked_at": "2026-09-18T00:47:54.432461+00:00",
+  "engine_sha256": "66a7ada242062448e8ea6a2882278cfe1edad61514fe55d8fc17d2208d295566",
+  "dataset_sha256": "0cbc7aee46a6d5c42236f56165a253ebacd9b17003ec07f948809be8b1fac2ba",
+  "result_sha256": "64ea4be4ff5f9527d8a34821e12fdcb607c8a48964c3c17bb0fef8d42e1d677b",
+  "all_labels_and_counts_match": true,
+  "independent_cases": 96,
+  "no_threshold_or_source_change_after_results": true
+}

@@ -17,7 +17,7 @@ Reference: Codex 0.154.0 native hook contract.
 The tool name is never treated as evidence of safety. Only a small literal
 `pwd` / `git status` fast path skips remote judgment only for an exact positive
 goal/action pair. Any additional goal text or configured constraint disables
-that path. Other actions use the same three questions.
+that path. Other actions use per-instruction judgments and the applicable exact-comparison path.
 
 Observe mode adds feedback. Guard mode denies high-scoring concrete conflicts.
 Review, missing context, provider failure and call-budget exhaustion add an
@@ -46,7 +46,6 @@ possible. A user who can edit the plugin/config can bypass it.
 The added path binds plain-language limits to scalar tool arguments, including
 simple literal shell flags. Jev selects meaning and rule authority; code compares
 values. It does not parse arbitrary Python, JavaScript, shell substitutions,
-array aggregates, or dynamic application state. Unsupported forms retain the
-existing general check. This is not a general-purpose type system or sandbox.
+array aggregates, or dynamic application state. Unsupported forms retain semantic instruction checks. This is not a general-purpose type system or sandbox.
 
 See [implementation and boundaries](v0.2.0.md) and [measured results](../evals/v0.2.0/README.md).
