@@ -132,7 +132,10 @@ def _validate_graph(value: Any) -> dict:
     if (len(canonical(value)) > 262144 or value.get("phase") not in ("build", "proof", "repair", "complete", "done")
             or not isinstance(value.get("session_id"), str) or not value["session_id"] or len(value["session_id"]) > 256
             or not isinstance(b, dict) or not isinstance(b.get("objective"), str) or not b["objective"]
-            or len(b["objective"]) > 6000 or not isinstance(c, dict) or not isinstance(c.get("layer"), str) or not isinstance(c.get("next"), str) or len(c["next"]) > 6000
+            or len(b["objective"]) > 6000 or not isinstance(c, dict)
+            or not (isinstance(c.get("layer"), str) or
+                    (value.get("phase") in ("proof", "repair") and "layer" in c and c["layer"] is None))
+            or not isinstance(c.get("next"), str) or len(c["next"]) > 6000
             or type(value.get("revision")) is not int or value["revision"] < 0
             or type(value.get("generation")) is not int or value["generation"] < 0):
         return {"status": "unassessed", "reason": "malformed_context"}

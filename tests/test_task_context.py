@@ -76,4 +76,22 @@ class TaskContextTests(unittest.TestCase):
             rows=db.task_evidence('task', current_generation=1)
             self.assertEqual(len(rows), 2); self.assertIn('one', rows[0]); self.assertIn('two', rows[1]); db.close()
 
+    def test_proof_phase_has_no_construction_layer(self):
+        value = gf()
+        value["phase"] = "proof"
+        value["cursor"]["layer"] = None
+        self.assertEqual(jmt._validate_graph(value), value)
+        with tempfile.TemporaryDirectory() as temp:
+            seen = []
+            assessor = lambda state, *args: seen.append(state) or jmt.verdict("pass", "ok", state)
+            directory = Path(temp)
+            jmt.hook(self.ev("UserPromptSubmit", prompt="Verify the joined result"), self.cfg, directory, assessor, lambda sid: value)
+            jmt.hook(self.ev("PreToolUse", tool_name="Bash", tool_input={"command": "example-check"}), self.cfg, directory, assessor, lambda sid: value)
+            self.assertEqual(len(seen), 1)
+            self.assertIsNone(seen[0]["task_context"]["cursor"]["layer"])
+        value["phase"] = "repair"
+        self.assertEqual(jmt._validate_graph(value), value)
+        value["phase"] = "build"
+        self.assertEqual(jmt._validate_graph(value)["reason"], "malformed_context")
+
 if __name__=='__main__': unittest.main()
