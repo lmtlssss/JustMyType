@@ -67,4 +67,13 @@ class InstallTests(unittest.TestCase):
             self.assertIn('${PLUGIN_DATA}',handler['command'])
             self.assertNotIn('/home/',json.dumps(handler))
 
+    def test_context_limit_is_supported_only_on_non_stop_hooks(self):
+        h=json.loads((ROOT/'plugins/justmytype/hooks/hooks.json').read_text())['hooks']
+        for name, groups in h.items():
+            handler=groups[0]['hooks'][0]
+            if name == 'Stop':
+                self.assertNotIn('additionalContextLimit', handler)
+            else:
+                self.assertEqual(handler['additionalContextLimit'], 1000)
+
 if __name__ == '__main__':unittest.main()
