@@ -1,0 +1,29 @@
+{
+  "state": {
+    "message": "I want help building a website and arranging a discovery call."
+  },
+  "questions": {
+    "route": {
+      "type": "choice",
+      "instructions": "Choose the relevant intake queue.",
+      "criteria": {
+        "web": "Website and platform work",
+        "mail": "Email delivery support",
+        "other": "No listed queue fits"
+      }
+    },
+    "has_deadline": {
+      "type": "noul",
+      "instructions": "Does this message state an explicit deadline?"
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": "Rate explicit time urgency, not commercial importance.",
+      "criteria": [
+        "No deadline stated",
+        "Upcoming requested date",
+        "Immediate deadline stated"
+      ]
+    }
+  }
+}

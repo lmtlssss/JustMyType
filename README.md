@@ -2,7 +2,7 @@
 
 it's not you. it's your arguments.
 
-TypeSafe checks for Codex.
+TypeSafe-backed action checks and reusable typed decisions for Codex and the Machine CLI bridge.
 
 ```text
 JUSTMYTYPE
@@ -98,3 +98,13 @@ python3 scripts/package.py
 ```
 
 MIT. Independent integration.
+
+## decision toolkit in 0.3
+
+`justmytype decide` batches typed questions; `select` ranks optional context while preserving protected text; `stats` reports actual advisory usage. Native hooks also retain bounded local repeat observations. Existing action guards keep their policy.
+
+[Contracts and examples](docs/toolkit.md) · [All 30 source reviews](docs/jev-ecosystem.md)
+
+[v0.3.0 observed source proof](docs/v0.3.0.md)
+
+These additions are not an automatic model switch, transcript rewrite, or permission system. Source review and test results must be reported separately from live installation proof.

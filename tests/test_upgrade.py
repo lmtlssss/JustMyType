@@ -138,7 +138,7 @@ class UpgradeTests(unittest.TestCase):
         self.assertTrue((self.home / "plugins/data/justmytype-justmytype/compatibility-backups/0.2.0-jmt.py").exists())
         result = subprocess.run([sys.executable, str(forwarded), "--data-dir", str(self.home / "plugins/data/justmytype-justmytype"), "doctor"], text=True, capture_output=True)
         self.assertEqual(result.returncode, 0)
-        self.assertIn("0.2.1", result.stdout + result.stderr)
+        self.assertIn("0.3.0", result.stdout + result.stderr)
 
     def test_unexpected_existing_marketplace_owner_rejected_without_remove(self):
         self.marketplace = "/ чужой/root"

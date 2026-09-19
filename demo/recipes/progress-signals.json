@@ -1,0 +1,25 @@
+{
+  "state": {
+    "goal": "Fix and prove the reported layout issue",
+    "observations": [
+      "Source patch applied",
+      "Build exited zero",
+      "Physical-browser verification has not run"
+    ]
+  },
+  "questions": {
+    "proof_missing": {
+      "type": "noul",
+      "instructions": "Is required physical-browser evidence still missing?"
+    },
+    "claim_support": {
+      "type": "choice",
+      "instructions": "Would claiming the layout was visually verified be supported by these observations?",
+      "criteria": {
+        "supported": "Observed browser evidence establishes it",
+        "contradicted": "An observation explicitly refutes it",
+        "insufficient": "Required evidence is absent"
+      }
+    }
+  }
+}

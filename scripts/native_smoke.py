@@ -79,7 +79,7 @@ def main():
         assert 'cloud off' in out['hookSpecificOutput']['additionalContext']
         doctor=subprocess.run([sys.executable,str(cache/'scripts/jmt.py'),'--data-dir',str(data),'doctor'],env=e,text=True,capture_output=True,timeout=20)
         assert doctor.returncode==0,doctor.stderr
-        assert json.loads(doctor.stdout)['version']=='0.2.1'
+        assert json.loads(doctor.stdout)['version']==install.VERSION
         (data/'retained-test.txt').write_text('synthetic private state',encoding='utf-8')
         install.uninstall(home,bindir,a.codex)
         assert (data/'retained-test.txt').read_text()=='synthetic private state'

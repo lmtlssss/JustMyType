@@ -59,3 +59,9 @@ values. It does not parse arbitrary Python, JavaScript, shell substitutions,
 array aggregates, or dynamic application state. Unsupported forms retain semantic instruction checks. This is not a general-purpose type system or sandbox.
 
 See [implementation and boundaries](v0.2.0.md) and [measured results](../evals/v0.2.0/README.md).
+
+## 0.3 additions
+
+The native guard coverage above is unchanged. Explicit `decide` and `select` are advisory CLI operations, usable through the existing Machine command surface. PostToolUse adds a local third-repeat advisory when exact task/generation identity is available. It neither blocks execution nor converts exit status to behavioral proof.
+
+There is no Claude-style transcript replacement, automatic skill-rule deletion, new model router, or new provider authority. The 32-per-turn budget counts guarded assessments, not underlying wire requests; one numeric assessment can use multiple requests. See [toolkit](toolkit.md) and [source review](jev-ecosystem.md).

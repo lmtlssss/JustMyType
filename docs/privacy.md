@@ -34,3 +34,9 @@ reuse the same redacted user instructions and evidence with derived literal-fiel
 candidates. There is no new transcript access or credential source. More requests
 can mean more token usage. The result retains model signals and exact comparisons;
 those results can include the relevant source field and numeric bound.
+
+## 0.3 advisory utilities
+
+Explicit `decide` requests send redacted supplied state/questions to the same provider. `select` sends supplied goal and candidate descriptions, not full candidate bodies or source paths. The caller controls what goes into descriptions; redaction remains best-effort.
+
+The advisory cache stores validated answers and usage, not request bodies, and is scoped to request/model/runtime/namespace/generation. It expires after five minutes and is capped at 128 entries. Credential-redacted input is not cached. Guard decisions never use this cache. Local progress storage contains bounded observation hashes and status metadata, skips credential-redacted observations, and never grants permission or deletes original evidence.

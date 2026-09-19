@@ -1,0 +1,25 @@
+{
+  "state": {
+    "goal": "Find release rollback instructions",
+    "node": "Deployment guide",
+    "edges": {
+      "e1": "Rollback runbook",
+      "e2": "Logo assets"
+    }
+  },
+  "questions": {
+    "edge": {
+      "type": "choice",
+      "instructions": "Select an existing next edge useful for the goal, or none.",
+      "criteria": {
+        "e1": "Rollback runbook",
+        "e2": "Logo assets",
+        "none": "No relevant edge"
+      }
+    },
+    "goal_present": {
+      "type": "noul",
+      "instructions": "Does the current node itself already provide the requested rollback instructions?"
+    }
+  }
+}

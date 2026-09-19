@@ -1,0 +1,24 @@
+{
+  "state": {
+    "request": "Use the delivery address",
+    "spans": {
+      "s1": "17 Example Street",
+      "s2": "91 Sample Avenue"
+    },
+    "labels": {
+      "s1": "Delivery",
+      "s2": "Billing"
+    }
+  },
+  "questions": {
+    "address": {
+      "type": "choice",
+      "instructions": "Select the source span containing the requested address. Code copies its exact text.",
+      "criteria": {
+        "s1": "First source span",
+        "s2": "Second source span",
+        "none": "No requested address is present"
+      }
+    }
+  }
+}

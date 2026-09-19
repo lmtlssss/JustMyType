@@ -19,16 +19,26 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable
+
+def _load_sibling(name):
+    spec = importlib.util.spec_from_file_location("jmt_" + name, Path(__file__).with_name(name + ".py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+decisions = _load_sibling("decisions")
+selection = _load_sibling("selection")
+progress = _load_sibling("progress")
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-VERSION = "0.2.1"
+VERSION = "0.3.0"
 NAME = "justmytype"
 API_URL = "https://api.typesafe.ai/v1/systemone"
 POLICY_PATH = Path(__file__).with_name("policy.json")
 POLICY = json.loads(POLICY_PATH.read_text(encoding="utf-8"))
 MODEL = POLICY["model"]
-ENGINE_SHA256 = hashlib.sha256(b"".join(Path(__file__).with_name(n).read_bytes() for n in ("jmt.py", "bindings.py", "policy.json"))).hexdigest()
+ENGINE_SHA256 = hashlib.sha256(b"".join(Path(__file__).with_name(n).read_bytes() for n in ("jmt.py", "bindings.py", "policy.json", "decisions.py", "selection.py", "progress.py"))).hexdigest()
 _bind_spec = importlib.util.spec_from_file_location("jmt_bindings", Path(__file__).with_name("bindings.py"))
 bindings = importlib.util.module_from_spec(_bind_spec)
 _bind_spec.loader.exec_module(bindings)
@@ -272,6 +282,9 @@ def validate_response(result: Any, questions: dict) -> dict:
             if not probability(answer.get("noul")):
                 raise ValueError("invalid_probability")
         else:
+            if question["type"] == "score":
+                decisions._answer(question, answer)
+                continue
             probs = answer.get("probabilities")
             if (not isinstance(probs, dict) or set(probs) != set(question["criteria"])
                     or not all(probability(v) for v in probs.values())
@@ -553,7 +566,7 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, t
     kind = event.get("hook_event_name", event.get("type"))
     if kind == "SessionStart":
         status = "cloud on; " + cfg["mode"] if cfg["cloud_enabled"] else "cloud off; no remote checks"
-        return context(kind, "JustMyType " + status + ". CLI: justmytype check, verify, doctor. Native local tools only; hosted tools and later write_stdin input are outside coverage. API judgments are not proof or authorization.")
+        return context(kind, "JustMyType " + status + ". CLI: justmytype check, verify, decide, select, stats, progress, doctor. decide/select are advisory; selection preserves protected source text. Native local tools only; hosted tools and later write_stdin input are outside coverage. API judgments are not proof or authorization.")
     if kind not in ("UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"):
         return {}
     sid, tid = event.get("session_id"), event.get("turn_id")
@@ -591,7 +604,15 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, t
                 command = safe_args.get("command", safe_args.get("cmd", canonical(safe_args).decode())) if isinstance(safe_args, dict) else canonical(safe_args).decode()
                 db.task_outcome(task_key, action, str(generation or ""),
                                 tool_receipt(raw, {"command": identity + ": " + str(command) + " cwd=" + redact(event.get("cwd", ""))}, 900), failed)
-            return context(kind, "JustMyType: the observed tool result failed. Do not report the requested outcome as complete without new evidence.") if failed else {}
+            notices = ["JustMyType: the observed tool result failed. Do not report the requested outcome as complete without new evidence."] if failed else []
+            if task_key and row and generation is not None:
+                observed = progress.record(directory, session=sid, task=task_key,
+                    generation=str(generation), tool=str(event.get("tool_name", "unknown")),
+                    arguments=event.get("tool_input", {}), cwd=str(event.get("cwd", "")),
+                    response=raw, redact=redact)
+                if observed.get("advisory"):
+                    notices.append("JustMyType: " + observed["advisory"]["message"])
+            return context(kind, " ".join(notices)) if notices else {}
         if not cfg["cloud_enabled"]:
             return {}
         if kind == "Stop" and (event.get("stop_hook_active") or (row and row["corrected"])):
@@ -658,12 +679,52 @@ def read_json(path: str = "-") -> Any:
     return json.loads(raw.decode("utf-8-sig"))
 
 
+def toolkit(payload: Any, cfg: dict, directory: Path, op: str = "decide", transport: Callable | None = None) -> dict:
+    """Advisory utilities share the existing credential and HTTP boundary."""
+    unavailable = {"status": "unassessed", "reason_codes": ["toolkit_unavailable"],
+                   "answers": {}, "usage": {}, "evaluations": 0, "cache_hit": False}
+    if op not in ("decide", "select"):
+        return unavailable
+    if (transport is None and cfg["cloud_enabled"] and not os.environ.get("TYPESAFE_API_KEY")
+            and cfg["credential_runner"] and not os.environ.get("JMT_CREDENTIAL_CHILD")):
+        argv = cfg["credential_runner"] + [sys.executable, str(Path(__file__).resolve()),
+                                           "--data-dir", str(directory), op]
+        try:
+            result = subprocess.run(argv, input=canonical(payload), stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL, timeout=40, check=False,
+                                    env=dict(os.environ, JMT_CREDENTIAL_CHILD="1"))
+            if len(result.stdout) > MAX_INPUT or result.returncode not in (0, 2, 4):
+                return unavailable
+            out = json.loads(result.stdout)
+            if not isinstance(out, dict) or out.get("status") not in ("ok", "partial", "unassessed", "budget_exceeded"):
+                return unavailable
+            return out
+        except (OSError, ValueError, TypeError, subprocess.TimeoutExpired):
+            return unavailable
+
+    def decide(request):
+        return decisions.evaluate(request,
+            request=lambda state, questions: request_api(state, questions, transport),
+            redact=redact, directory=directory, enabled=cfg["cloud_enabled"] or transport is not None,
+            model=MODEL, engine_sha256=ENGINE_SHA256)
+    try:
+        return decide(payload) if op == "decide" else selection.select(payload, evaluate=decide)
+    except (ValueError, TypeError, KeyError, OSError, sqlite3.Error, RecursionError):
+        return unavailable
+
+
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir")
     commands = parser.add_subparsers(dest="op", required=True)
-    for name in ("check", "verify"):
+    for name in ("check", "verify", "decide", "select"):
         commands.add_parser(name).add_argument("--input", default="-")
+    commands.add_parser("stats")
+    progress_command = commands.add_parser("progress")
+    progress_command.add_argument("--session", required=True)
+    progress_command.add_argument("--task", required=True)
     commands.add_parser("hook")
     doctor = commands.add_parser("doctor")
     doctor.add_argument("--live", action="store_true")
@@ -681,6 +742,16 @@ def main(argv: list[str] | None = None) -> int:
     directory = data_dir(args.data_dir)
     try:
         cfg = load_config(directory)
+        if args.op in ("decide", "select"):
+            out = toolkit(read_json(args.input), cfg, directory, args.op)
+            print(json.dumps(out, ensure_ascii=False, allow_nan=False))
+            return {"ok": 0, "partial": 2, "budget_exceeded": 2, "unassessed": 4}[out["status"]]
+        if args.op == "stats":
+            print(json.dumps({"advisory": decisions.stats(directory), "note": "Logical evaluations and provider-reported tokens; not total agent savings."}))
+            return 0
+        if args.op == "progress":
+            print(json.dumps(progress.snapshot(directory, session=args.session, task=args.task)))
+            return 0
         if args.op == "configure":
             if args.cloud:
                 cfg["cloud_enabled"] = args.cloud == "on"
@@ -705,6 +776,8 @@ def main(argv: list[str] | None = None) -> int:
                    "cloud_enabled": cfg["cloud_enabled"], "mode": cfg["mode"],
                    "api_key_present": bool(os.environ.get("TYPESAFE_API_KEY")), "credential_runner_configured": bool(cfg["credential_runner"]),
                    "model": MODEL, "policy_sha256": digest(POLICY), "runtime_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "engine_sha256": ENGINE_SHA256}
+            out["capabilities"] = ["check", "verify", "guard", "decide", "select", "stats", "progress"]
+            out["cache_scope"] = "Explicit advisory decisions only; never action authorization."
             if args.live:
                 out["live"] = assess({"goal": "Inspect the demo service without changes.", "action": {"tool": "Bash", "arguments": {"command": "systemctl status demo.service --no-pager"}}, "constraints": [], "evidence": []}, cfg, directory)
             print(json.dumps(out))

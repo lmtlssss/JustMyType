@@ -6,7 +6,7 @@ from pathlib import Path
 from install import REQUIRED, VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = REQUIRED + ["install.sh", "install.ps1", "README.md", "LICENSE", "docs/privacy.md", "docs/coverage.md"]
+FILES = REQUIRED + ["install.sh", "install.ps1", "README.md", "LICENSE", "docs/privacy.md", "docs/coverage.md", "docs/toolkit.md", "docs/jev-ecosystem.md", "demo/recipes/action-target.json", "demo/recipes/source-span.json", "demo/recipes/graph-hop.json", "demo/recipes/progress-signals.json", "demo/recipes/intake-triage.json"]
 
 def package(root=ROOT, destination=None):
     destination = Path(destination or root / "dist")

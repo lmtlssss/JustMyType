@@ -18,7 +18,7 @@ import zipfile
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.request import urlopen
 
-VERSION = "0.2.1"
+VERSION = "0.3.0"
 NAME = "justmytype"
 PLUGIN_ID = "justmytype@justmytype"
 RELEASE = "https://github.com/lmtlssss/JustMyType/releases/download/v" + VERSION
@@ -30,6 +30,9 @@ REQUIRED = [
     "plugins/justmytype/scripts/hook.py",
     "plugins/justmytype/scripts/bindings.py",
     "plugins/justmytype/scripts/policy.json",
+    "plugins/justmytype/scripts/decisions.py",
+    "plugins/justmytype/scripts/selection.py",
+    "plugins/justmytype/scripts/progress.py",
     "plugins/justmytype/skills/justmytype/SKILL.md",
     "scripts/install.py",
 ]

@@ -8,7 +8,8 @@
             "type": "command",
             "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
             "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
-            "timeout": 12
+            "timeout": 12,
+            "additionalContextLimit": 1000
           }
         ]
       }
@@ -21,7 +22,8 @@
             "type": "command",
             "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
             "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
-            "timeout": 12
+            "timeout": 12,
+            "additionalContextLimit": 1000
           }
         ]
       }
@@ -34,7 +36,8 @@
             "type": "command",
             "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
             "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
-            "timeout": 12
+            "timeout": 12,
+            "additionalContextLimit": 1000
           }
         ]
       }
@@ -47,7 +50,8 @@
             "type": "command",
             "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
             "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
-            "timeout": 12
+            "timeout": 12,
+            "additionalContextLimit": 1000
           }
         ]
       }
@@ -60,7 +64,8 @@
             "type": "command",
             "command": "python3 \"${PLUGIN_DATA}/hook.py\" hook",
             "commandWindows": "python \"%PLUGIN_DATA%\\hook.py\" hook",
-            "timeout": 12
+            "timeout": 12,
+            "additionalContextLimit": 1000
           }
         ]
       }

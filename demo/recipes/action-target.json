@@ -1,0 +1,28 @@
+{
+  "state": {
+    "goal": "Open account settings",
+    "elements": {
+      "e1": "Settings button",
+      "e2": "Search input"
+    }
+  },
+  "questions": {
+    "operation": {
+      "type": "choice",
+      "instructions": "Choose the operation that advances the goal; use none if no valid action.",
+      "criteria": {
+        "click": "Click a visible button",
+        "type_text": "Enter text in a field",
+        "none": "No useful supported action"
+      }
+    },
+    "click_target": {
+      "type": "choice",
+      "instructions": "Assuming the operation is click, select a compatible observed target. Only consume this answer for that operation.",
+      "criteria": {
+        "e1": "Settings button",
+        "none": "No compatible target"
+      }
+    }
+  }
+}
