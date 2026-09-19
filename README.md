@@ -101,7 +101,7 @@ MIT. Independent integration.
 
 ## decision toolkit in 0.3
 
-`justmytype decide` batches typed questions; `select` ranks optional context while preserving protected text; `stats` reports actual advisory usage. Native hooks also retain bounded local repeat observations. Existing action guards keep their policy.
+`justmytype decide` batches typed questions; `select` ranks optional context while preserving protected text; `stats` reports actual advisory usage. Native hooks record routine observations locally without a semantic verdict, reserve one unchanged budget slot for Stop, and use Jev for bounded substantive actions and final claims. Local routing is not authorization or proof; explicit checks and guards are unchanged.
 
 [Contracts and examples](docs/toolkit.md) · [All 30 source reviews](docs/jev-ecosystem.md)
 

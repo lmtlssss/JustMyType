@@ -43,6 +43,7 @@ _bind_spec = importlib.util.spec_from_file_location("jmt_bindings", Path(__file_
 bindings = importlib.util.module_from_spec(_bind_spec)
 _bind_spec.loader.exec_module(bindings)
 MAX_INPUT = 262144
+MAX_HOOK_INPUT = 16 * 1024 * 1024
 MAX_STATE = 32768
 MAX_RESPONSE = 32768
 DEFAULTS = {"cloud_enabled": False, "mode": "observe", "credential_runner": [],
@@ -220,6 +221,73 @@ def readonly(action: dict) -> bool:
         except ValueError:
             return False
     return tokens in (["pwd"], ["git", "status"], ["git", "status", "--short"], ["git", "status", "--porcelain"])
+
+
+def routine_observation(action: dict) -> bool:
+    """Conservative local routing for read-only shell observations."""
+    if action.get("tool") not in ("Bash", "exec_command", "shell_command", "shell", "exec_argv"):
+        return False
+    args = action.get("arguments", {})
+    if action["tool"] == "exec_argv":
+        tokens = args.get("argv")
+        if not strings(tokens):
+            return False
+        segments = [tokens]
+    else:
+        command = args.get("command", args.get("cmd"))
+        if not isinstance(command, str) or re.search(r"[$`<>(){}]", command):
+            return False
+        command = command.strip()
+        try:
+            lexer = shlex.shlex(command.replace("\n", " ; ").replace("\r", " ; "), posix=True, punctuation_chars=";&|<>")
+            lexer.whitespace_split = True
+            lexer.commenters = ""
+            tokens = list(lexer)
+        except ValueError:
+            return False
+        segments, current = [], []
+        for token in tokens + [";"]:
+            if token in (";", "|", "&&", "||"):
+                if not current:
+                    return False
+                segments.append(current); current = []
+            elif token and set(token) <= set(";&|<>"):
+                return False
+            elif token == "$" or any(ch in token for ch in "<>`(){}"):
+                return False
+            else:
+                current.append(token)
+    for segment in segments:
+        if not segment:
+            return False
+        command = segment[0]
+        if command in ("pwd", "cat", "head", "tail", "wc", "stat", "ls", "readlink", "jq"):
+            continue
+        if command == "command" and len(segment) == 3 and segment[1] == "-v" and re.fullmatch(r"[A-Za-z0-9_./-]+", segment[2]):
+            continue
+        if command == "rg":
+            if any(x == "--pre" or x.startswith("--pre=") or x == "--hostname-bin" or x.startswith("--hostname-bin=") for x in segment[1:]):
+                return False
+            continue
+        if command == "sed":
+            if len(segment) < 3 or segment[1] != "-n":
+                return False
+            rest = segment[2:]
+            if rest and rest[0] == "--": rest = rest[1:]
+            if not rest or not re.fullmatch(r"(?:\d+,)?\d+p", rest[0]):
+                return False
+            if any(x.startswith("-") for x in rest[1:]):
+                return False
+            continue
+        if command == "git":
+            if len(segment) < 2 or segment[1] not in ("status", "log", "show", "diff", "rev-parse"):
+                return False
+            forbidden = ("--output", "--ext-diff", "--textconv", "--exec", "--open-files-in-pager")
+            if any(x == "-c" or x == "--config" or x.startswith("--output") or x.startswith("--exec=") or x in forbidden for x in segment[1:]):
+                return False
+            continue
+        return False
+    return True
 
 
 def literal_authorized(state: dict, cfg: dict) -> bool:
@@ -480,6 +548,7 @@ class StateStore:
         self.db.execute("CREATE TABLE IF NOT EXISTS turns (sid TEXT, tid TEXT, goal TEXT, evidence TEXT, calls INTEGER, corrected INTEGER, updated REAL, PRIMARY KEY(sid,tid))")
         self.db.execute("CREATE TABLE IF NOT EXISTS task_outcomes (task TEXT, action TEXT, generation TEXT, outcome TEXT, failed INTEGER, updated REAL, PRIMARY KEY(task,action))")
         self.db.execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY, event TEXT, tool TEXT, decision TEXT, reasons TEXT, latency REAL, tokens INTEGER, policy TEXT)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS hook_notices (sid TEXT, tid TEXT, reason TEXT, PRIMARY KEY(sid,tid,reason))")
         if os.name != "nt":
             os.chmod(directory / "state.sqlite3", 0o600)
 
@@ -489,7 +558,9 @@ class StateStore:
     def prompt(self, sid: str, tid: str, goal: str):
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO turns VALUES (?,?,?,'[]',0,0,?)", (sid, tid, goal, time.time()))
+            self.db.execute("DELETE FROM hook_notices WHERE sid=? AND tid=?", (sid, tid))
             self.db.execute("DELETE FROM turns WHERE updated < ? OR rowid NOT IN (SELECT rowid FROM turns ORDER BY updated DESC LIMIT 128)", (time.time()-604800,))
+            self.db.execute("DELETE FROM hook_notices WHERE NOT EXISTS (SELECT 1 FROM turns WHERE turns.sid=hook_notices.sid AND turns.tid=hook_notices.tid)")
 
     def get(self, sid: str, tid: str):
         row = self.db.execute("SELECT goal,evidence,calls,corrected,updated FROM turns WHERE sid=? AND tid=?", (sid, tid)).fetchone()
@@ -508,6 +579,10 @@ class StateStore:
     def reserve(self, sid: str, tid: str, limit: int) -> bool:
         with self.db:
             return self.db.execute("UPDATE turns SET calls=calls+1 WHERE sid=? AND tid=? AND calls<?", (sid, tid, limit)).rowcount == 1
+
+    def notice_once(self, sid: str, tid: str, reason: str) -> bool:
+        with self.db:
+            return self.db.execute("INSERT OR IGNORE INTO hook_notices VALUES (?,?,?)", (sid, tid, reason)).rowcount == 1
 
     def correction(self, sid: str, tid: str) -> bool:
         with self.db:
@@ -561,6 +636,20 @@ def tool_receipt(raw: Any, tool_input: Any, max_chars: int = 2500) -> str:
     return prefix + meta + clean_text[:head] + label + clean_text[-tail:]
 
 
+def strip_binary_bodies(value: Any) -> Any:
+    if isinstance(value, dict):
+        if value.get("type") in ("image", "audio") and isinstance(value.get("data"), str):
+            out = dict(value)
+            out["data"] = "[binary image/audio body omitted; not visual evidence]"
+            return {k: strip_binary_bodies(v) for k, v in out.items()}
+        return {k: strip_binary_bodies(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [strip_binary_bodies(v) for v in value]
+    if isinstance(value, str) and re.match(r"^data:(?:image|audio)/[^;]+;base64,", value):
+        return "[binary image/audio body omitted; not visual evidence]"
+    return value
+
+
 def context(event: str, text: str) -> dict:
     return {"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}
 
@@ -569,7 +658,7 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, t
     kind = event.get("hook_event_name", event.get("type"))
     if kind == "SessionStart":
         status = "cloud on; " + cfg["mode"] if cfg["cloud_enabled"] else "cloud off; no remote checks"
-        return context(kind, "JustMyType " + status + ". CLI: justmytype check, verify, decide, select, stats, progress, doctor. decide/select are advisory; selection preserves protected source text. Native local tools only; hosted tools and later write_stdin input are outside coverage. API judgments are not proof or authorization.")
+        return context(kind, "JustMyType " + status + ". CLI: justmytype check, verify, decide, select, stats, progress, doctor. Routine observations are recorded locally without a semantic verdict. Substantive actions and final claims share a bounded Jev budget, with one slot reserved for Stop. decide/select are advisory; selection preserves protected source text. Native local tools only; hosted tools and later write_stdin input are outside coverage. API judgments are not proof or authorization.")
     if kind not in ("UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"):
         return {}
     sid, tid = event.get("session_id"), event.get("turn_id")
@@ -596,7 +685,7 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, t
         task_key = digest({"calling_sid": sid, "canonical_session": canonical_session,
                            "redacted_objective": redact(objective)}) if canonical_session and objective else None
         if kind == "PostToolUse":
-            raw = event.get("tool_response", {})
+            raw = strip_binary_bodies(event.get("tool_response", {}))
             clean_text = tool_receipt(raw, event.get("tool_input", {}))
             db.receipt(sid, tid, str(event.get("tool_name", "unknown"))[:100] + ": " + clean_text)
             failed = isinstance(raw, dict) and (raw.get("isError") is True or (type(raw.get("exit_code")) is int and raw["exit_code"] != 0))
@@ -640,14 +729,22 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, t
             result = verdict("unassessed", eligibility, {})
         elif graph.get("status") == "unassessed":
             result = verdict("unassessed", graph.get("reason", "missing_turn_context"), {})
+        elif (kind == "PreToolUse" and not cfg.get("constraints") and not state.get("constraints")
+              and not re.search(r"\b(?:no|not|never|only|without|avoid|forbid|forbidden|except|until|unless|limit|restricted|cannot)\b|n['’]t\b", state["goal"], re.I)
+              and routine_observation(state["action"])):
+            result = verdict("unassessed", "local_observation", {})
         elif kind == "PreToolUse" and literal_authorized(state, cfg):
             result = verdict("pass", "literal_read", state)
-        elif not db.reserve(sid, tid, cfg["max_calls_per_turn"]):
+        elif not db.reserve(sid, tid, max(0, cfg["max_calls_per_turn"] - (0 if kind == "Stop" else 1))):
             result = verdict("unassessed", "turn_budget_exhausted", {})
         else:
             result = assessor(state, cfg, directory, "verify" if kind == "Stop" else "check")
         db.record(kind, name, result)
+        if kind == "PreToolUse" and result["reason_codes"] == ["local_observation"]:
+            return {}
         text = "JustMyType: " + result["decision"] + " (" + ", ".join(result["reason_codes"]) + ")."
+        if kind == "PreToolUse" and result["reason_codes"] == ["turn_budget_exhausted"] and not db.notice_once(sid, tid, "turn_budget_exhausted"):
+            return {}
         for check in result.get("rule_checks", []):
             if check.get("enforced"):
                 comparison = check["comparison"]
@@ -671,14 +768,14 @@ def hook(event: dict, cfg: dict, directory: Path, assessor: Callable = assess, t
         db.close()
 
 
-def read_json(path: str = "-") -> Any:
+def read_json(path: str = "-", limit: int = MAX_INPUT) -> Any:
     if path == "-":
-        raw = sys.stdin.buffer.read(MAX_INPUT + 1)
+        raw = sys.stdin.buffer.read(limit + 1)
     else:
         with open(path, "rb") as f:
-            raw = f.read(MAX_INPUT + 1)
-    if len(raw) > MAX_INPUT:
-        raise ValueError("input_bound")
+            raw = f.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError("hook_input_bound" if limit == MAX_HOOK_INPUT else "input_bound")
     return json.loads(raw.decode("utf-8-sig"))
 
 
@@ -786,7 +883,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(out))
             return 0
         if args.op == "hook":
-            out = hook(read_json(), cfg, directory)
+            out = hook(read_json(limit=MAX_HOOK_INPUT), cfg, directory)
             print(json.dumps(out))
             return 0
         if args.op == "guard":
@@ -803,9 +900,10 @@ def main(argv: list[str] | None = None) -> int:
         out = assess(read_json(args.input), cfg, directory, args.op)
         print(json.dumps(out))
         return {"pass": 0, "review": 2, "block": 3, "unassessed": 4}[out["decision"]]
-    except (ValueError, TypeError, KeyError, OSError, sqlite3.Error, RecursionError):
+    except (ValueError, TypeError, KeyError, OSError, sqlite3.Error, RecursionError) as exc:
         if args.op == "hook":
-            print(json.dumps({"systemMessage": "JustMyType: local assessment unavailable; no safety verdict was produced."}))
+            reason = "hook_input_bound" if str(exc) == "hook_input_bound" else "invalid_input_or_local_state"
+            print(json.dumps({"systemMessage": "JustMyType: unassessed (" + reason + "); no safety verdict was produced."}))
             return 0
         print(json.dumps(verdict("unassessed", "invalid_input_or_local_state", {})))
         return 4

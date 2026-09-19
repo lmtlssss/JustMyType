@@ -20,7 +20,7 @@ class TaskContextTests(unittest.TestCase):
                 d=Path(t); calls=[]; a=lambda *x: calls.append(1) or jmt.verdict('pass','x',{})
                 jmt.hook(self.ev('UserPromptSubmit',prompt='goal'),self.cfg,d,a,lambda s,val=val:val)
                 for k in ('PreToolUse','Stop'):
-                    out=jmt.hook(self.ev(k,tool_name='Bash',tool_input={'command':'pwd'}),self.cfg,d,a,lambda s,val=val:val)
+                    out=jmt.hook(self.ev(k,tool_name='Bash',tool_input={'command':'example-check'}),self.cfg,d,a,lambda s,val=val:val)
                     if val.get('status') == 'absent': self.assertEqual(calls, [1, 1] if k == 'Stop' else [1])
                     else: self.assertFalse(calls); self.assertIn(reason,str(out))
     def test_bad_inputs_no_reserve(self):
@@ -53,10 +53,12 @@ class TaskContextTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             d=Path(t); loader=lambda s:gf(); a=lambda st,*x:jmt.verdict('pass','ok',st)
             jmt.hook(self.ev('UserPromptSubmit',prompt='goal'),self.cfg,d,a,loader)
-            for i in range(32): jmt.hook(self.ev('PreToolUse',tool_name='mcp__x',tool_input={'i':i}),self.cfg,d,a,loader)
-            before=jmt.StateStore(d).get(jmt.digest('raw'),jmt.digest('turn'))['calls']; self.assertEqual(before,32)
+            for i in range(31): jmt.hook(self.ev('PreToolUse',tool_name='mcp__x',tool_input={'i':i}),self.cfg,d,a,loader)
+            before=jmt.StateStore(d).get(jmt.digest('raw'),jmt.digest('turn'))['calls']; self.assertEqual(before,31)
             jmt.hook(self.ev('PreToolUse',tool_name='unsupported',tool_input={}),self.cfg,d,a,loader)
-            after=jmt.StateStore(d).get(jmt.digest('raw'),jmt.digest('turn'))['calls']; self.assertEqual(after,32)
+            after=jmt.StateStore(d).get(jmt.digest('raw'),jmt.digest('turn'))['calls']; self.assertEqual(after,31)
+            jmt.hook(self.ev('Stop',last_assistant_message='bounded claim'),self.cfg,d,a,loader)
+            final=jmt.StateStore(d).get(jmt.digest('raw'),jmt.digest('turn'))['calls']; self.assertEqual(final,32)
 
     def test_cross_turn_failure_survives_and_is_labeled(self):
         with tempfile.TemporaryDirectory() as t:
